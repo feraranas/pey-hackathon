@@ -52,6 +52,51 @@ PAD_X, PAD_Y = 10, 7
 HEADER_BOTTOM = 104
 INPUT_TOP = 852 - 84
 
+# Modo limpio (presentación): sin marcas de maqueta ni avisos dentro de las pantallas.
+# Los enlaces y los QR siguen apuntando a dominios reservados (.example / .invalid).
+# Los ajustes del modo limpio (textos, enlace y QR de presentación) están en presentation.json.
+CLEAN = os.environ.get('MOCKUP_CLEAN') == '1'
+PRESENTATION = json.loads((HERE / 'presentation.json').read_text(encoding='utf-8'))
+
+
+def apply_clean(spec):
+    """Aplica presentation.json sobre screens.json cuando CLEAN está activo."""
+    if not CLEAN:
+        return spec
+    pr = PRESENTATION
+    byid = {sc['id']: sc for sc in spec['screens']}
+    hidden = []
+    for hid, h in pr.get('hidden_screens', {}).items():
+        sc = json.loads(json.dumps(byid[h['from']]))
+        sc['id'], sc['hidden'] = hid, True
+        hidden.append(sc)
+    for ref, ov in pr.get('message_overrides', {}).items():
+        sid, idx = ref.split(':')
+        byid[sid]['messages'][int(idx)].update(ov)
+    for sid, ov in pr.get('screen_overrides', {}).items():
+        sc = byid[sid]
+        for k in ('rows', 'page', 'messages', 'header'):
+            sc.pop(k, None)
+        sc.update(json.loads(json.dumps(ov)))
+    for sc in spec['screens'] + hidden:
+        for m in sc.get('messages', []):
+            for k in ('text', 'caption'):
+                if k in m:
+                    for a, b in pr['replace_text'].items():
+                        m[k] = m[k].replace(a, b)
+            if m.get('preview'):
+                m['preview']['domain'] = pr['link_domain']
+        if sc.get('page'):
+            sc['page']['domain'] = pr['link_domain']
+    spec['screens'] = hidden + spec['screens']
+    return spec
+
+
+@lru_cache(maxsize=None)
+def qr_asset():
+    return Image.open(HERE / PRESENTATION['qr_asset']).convert('RGBA')
+
+
 EMOJI_RE = re.compile('([\U0001F300-\U0001FAFF\u2600-\u27BF\u2B50\u2B55]\uFE0F?)')
 
 
@@ -430,6 +475,14 @@ def measure_text_bubble(m):
 
 
 def qr_image(data, px):
+    if CLEAN:
+        # QR de presentación tal cual: se escala sin recolorear y conservando proporción y margen
+        a = qr_asset()
+        k = min(px / a.width, px / a.height)
+        im = a.resize((max(1, round(a.width * k)), max(1, round(a.height * k))), Image.LANCZOS)
+        out = Image.new('RGBA', (px, px), (255, 255, 255, 255))
+        out.alpha_composite(im, ((px - im.width) // 2, (px - im.height) // 2))
+        return out
     q = qrcode.QRCode(border=1, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=4)
     q.add_data(data)
     q.make(fit=True)
@@ -533,18 +586,20 @@ def draw_receipt(img, r, x, y, w, hgt):
     rr(d, (x, y, x + w, y + hgt), 13, (233, 236, 239))
     rr(d, (x + 14, y + 16, x + w - 14, y + hgt - 16), 8, (255, 255, 255))
     cx = x + 26
-    draw_run(img, cx, y + 30, 'Tu banco (ejemplo)', 10.5, 600, (90, 90, 90))
+    draw_run(img, cx, y + 30, 'Tu banco' if CLEAN else 'Tu banco (ejemplo)', 10.5, 600, (90, 90, 90))
     d.ellipse([p(x + w / 2 - 17), p(y + 56), p(x + w / 2 + 17), p(y + 90)], fill=(46, 175, 98))
     d.line([(p(x + w / 2 - 8), p(y + 73)), (p(x + w / 2 - 2), p(y + 80)), (p(x + w / 2 + 9), p(y + 66))], fill=(255, 255, 255), width=p(3))
     t = 'Transferencia enviada'
     draw_run(img, x + w / 2 - run_width(t, 12, 650) / 2, y + 98, t, 12, 650, TEXT)
     draw_run(img, x + w / 2 - run_width(r['amount'], 20, 700) / 2, y + 118, r['amount'], 20, 700, TEXT)
-    rows = [('Concepto', r['concept']), ('Cuenta destino', r['dest']), ('Fecha', r['date']), ('Clave de rastreo', 'EJEMPLO000000')]
+    rows = [('Concepto', r['concept']), ('Cuenta destino', r['dest']), ('Fecha', r['date']), ('Clave de rastreo', 'BNET0100261108' if CLEAN else 'EJEMPLO000000')]
     yy = y + 152
     for k, v in rows:
         draw_run(img, cx, yy, k, 9.5, 400, META)
         draw_run(img, cx, yy + 12, ellipsize(v, w - 52, 10.5, 600)[0], 10.5, 600, TEXT)
         yy += 29
+    if CLEAN:
+        return
     tag = 'COMPROBANTE FICTICIO'
     draw_run(img, x + w / 2 - run_width(tag, 9, 700) / 2, y + hgt - 32, tag, 9, 700, (200, 60, 60))
 
@@ -584,7 +639,7 @@ def render_chat(sc, avatars):
     total = sum(l['h'] for l in lays) + sum(gaps)
     bottom = INPUT_TOP - 12
     y = bottom - total
-    if y < HEADER_BOTTOM + 8:
+    if y < HEADER_BOTTOM + 8 and not CLEAN:   # en modo limpio lo más antiguo queda bajo el encabezado, como al hacer scroll
         raise SystemExit(f"Pantalla {sc['id']}: el contenido no cabe ({HEADER_BOTTOM + 8 - y:.0f} pt de más)")
     for i, (m, lay) in enumerate(zip(msgs, lays)):
         nxt = msgs[i + 1] if i + 1 < len(msgs) else None
@@ -718,6 +773,8 @@ def pey_header(img, title):
 
 
 def concept_pill(img, y, text):
+    if CLEAN or not text:
+        return
     d = ImageDraw.Draw(img)
     tw = run_width(text, 10.5, 600)
     rr(d, (W / 2 - tw / 2 - 10, y, W / 2 + tw / 2 + 10, y + 20), 10, (254, 243, 199))
@@ -761,7 +818,8 @@ def render_checkout(sc, avatars):
     ax = W / 2 + tw / 2 + 4
     d.polygon([(p(ax), p(236)), (p(ax + 10), p(236)), (p(ax + 5), p(230))], fill=INK)
     d.line([(p(L), p(258)), (p(R), p(258))], fill=(229, 231, 235), width=p(0.8))
-    rows = [(pg['label_products'], pg['products'], False), (pg['label_fee'], pg['fee'], True)]
+    fee = pg['fee'].rstrip('*') if CLEAN else pg['fee']
+    rows = [(pg['label_products'], pg['products'], False), (pg['label_fee'], fee, True)]
     y = 268
     for k, v, info in rows:
         draw_run(img, 104, y, k, 11, 400, MUTED)
@@ -771,7 +829,8 @@ def render_checkout(sc, avatars):
             draw_run(img, ix + 3.6, y + 1.5, 'i', 8, 700, PEY_BLUE)
         draw_run(img, 288 - run_width(v, 11, 400), y, v, 11, 400, INK)
         y += 20
-    centered(img, y + 2, pg['fee_note'], 9.5, 400, MUTED)
+    if not CLEAN:
+        centered(img, y + 2, pg['fee_note'], 9.5, 400, MUTED)
     d.line([(p(L), p(326)), (p(R), p(326))], fill=(229, 231, 235), width=p(0.8))
     # tarjeta contenedora
     rr(d, (L, 334, R, 706), 9, (255, 255, 255), outline=(229, 231, 235), width=p(0.9))
@@ -803,10 +862,11 @@ def render_checkout(sc, avatars):
     # velo sobre la parte de tarjeta: fuera del MVP
     veil = Image.new('RGBA', (p(IR - IL + 8), p(689 - 424 + 6)), (255, 255, 255, 150))
     img.alpha_composite(veil, (p(IL - 4), p(424)))
-    tag = pg['card_note']
-    tw = run_width(tag, 11.5, 650)
-    rr(d, (W / 2 - tw / 2 - 12, 605 - 47, W / 2 + tw / 2 + 12, 605 - 23), 12, (55, 65, 81))
-    centered(img, 605 - 42, tag, 11.5, 650, (255, 255, 255))
+    if not CLEAN:
+        tag = pg['card_note']
+        tw = run_width(tag, 11.5, 650)
+        rr(d, (W / 2 - tw / 2 - 12, 605 - 47, W / 2 + tw / 2 + 12, 605 - 23), 12, (55, 65, 81))
+        centered(img, 605 - 42, tag, 11.5, 650, (255, 255, 255))
     safari_bar(img, pg['domain'])
     return img
 
@@ -825,11 +885,12 @@ def render_codiqr(sc, avatars):
     qs = 210
     qx, qy = W / 2 - qs / 2, 282
     img.paste(qr_image(pg['qr'], p(qs)), (p(qx), p(qy)))
-    bw = 92
-    rr(d, (W / 2 - bw / 2, qy + qs / 2 - 14, W / 2 + bw / 2, qy + qs / 2 + 14), 7, (200, 40, 40))
-    centered(img, qy + qs / 2 - 9, 'DEMO', 15, 800, (255, 255, 255))
     y = qy + qs + 14
-    centered(img, y, 'DEMO · NO PAGABLE', 12.5, 700, (200, 40, 40))
+    if not CLEAN:
+        bw = 92
+        rr(d, (W / 2 - bw / 2, qy + qs / 2 - 14, W / 2 + bw / 2, qy + qs / 2 + 14), 7, (200, 40, 40))
+        centered(img, qy + qs / 2 - 9, 'DEMO', 15, 800, (255, 255, 255))
+        centered(img, y, 'DEMO · NO PAGABLE', 12.5, 700, (200, 40, 40))
     y += 22
     centered(img, y, pg['expires'], 12.5, 500, MUTED)
     y += 28
@@ -944,13 +1005,19 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--out', default=str(HERE / 'mockups'))
     ap.add_argument('--zip', default=None)
+    ap.add_argument('--clean', action='store_true', help='modo limpio de presentación (sin marcas de maqueta)')
+    ap.add_argument('--screens-only', action='store_true', help='solo las pantallas, sin hojas de resumen')
     a = ap.parse_args()
-    spec = json.loads((HERE / 'screens.json').read_text(encoding='utf-8'))
+    global CLEAN
+    CLEAN = CLEAN or a.clean
+    spec = apply_clean(json.loads((HERE / 'screens.json').read_text(encoding='utf-8')))
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     avatars = spec['avatars']
     names, imgs = [], []
     for sc in spec['screens']:
+        if sc.get('hidden'):
+            continue
         if sc['type'] == 'chat':
             im = render_chat(sc, avatars)
         elif sc['type'] == 'chatlist':
@@ -967,6 +1034,8 @@ def main():
         imgs.append(im)
         print('pantalla', fn.name, im.size)
     meta = spec['meta']
+    if a.screens_only:
+        return
     ov = sheet(spec['screens'], imgs, 6, meta['title'], f"Rafa (Taller de Rafa), el agente y dos clientes: Ana y Luis. {len(spec['screens'])} pantallas en orden.", meta['disclaimer'], scale=0.5)
     ov.save(out / 'overview.png', optimize=True)
     names.append(out / 'overview.png')

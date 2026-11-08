@@ -75,7 +75,7 @@ Rafa pidió mandar un **enlace** de pago. El link hospedado de pey (`POST /payme
 
 ## Demo animada
 
-Hay una versión animada y guionizada del mismo flujo en [`demo/`](demo/README.md): video de 1080p generado a partir de `screens.json`, con datos ficticios y sin sesiones reales.
+Hay una versión animada del mismo flujo en [`demo/`](demo/README.md): video de 1080p y secuencias PNG generados a partir de `screens.json`, en modo limpio de presentación.
 
 ## Regenerar
 

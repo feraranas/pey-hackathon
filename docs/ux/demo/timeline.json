@@ -1,9 +1,7 @@
 {
   "meta": {
-    "title": "Cobros CoDi por WhatsApp · demo guionizada",
+    "title": "Cobros CoDi por WhatsApp",
     "fps": 30,
-    "watermark": "DEMO GUIONIZADA · DATOS FICTICIOS",
-    "disclaimer": "Maqueta animada del flujo planeado · no es WhatsApp, pey ni una sesión real · sin cuentas, chats ni pagos reales",
     "chapters": {
       "1": "Alta con el número del producto",
       "2": "Ana: presupuesto → «Sí» → pago",
@@ -30,17 +28,10 @@
       "luis": {
         "screen": "10"
       }
-    }
+    },
+    "clean": true
   },
   "steps": [
-    {
-      "op": "card",
-      "kind": "intro",
-      "dur": 4.5,
-      "title": "Cobros CoDi por WhatsApp",
-      "body": "Un agente que detecta cobros en los chats de un taller y le pide permiso al dueño antes de enviarlos.",
-      "note": "Demo guionizada con datos ficticios. Es una maqueta del flujo planeado: no hay app construida ni cuentas reales."
-    },
     {
       "op": "chapter",
       "n": 1
@@ -51,34 +42,47 @@
     },
     {
       "op": "caption",
-      "title": "Rafa le escribe al Agente de cobros",
-      "body": "Es un número de WhatsApp del producto. Rafa lo usa como cualquier contacto: sus mensajes van en verde y los del agente en blanco.",
+      "title": "Rafa es mecánico",
+      "body": "Acuerda los trabajos por WhatsApp, pero cobrar le cuesta: mandar su CLABE, esperar comprobantes y revisar si ya cayó el dinero. Le escribe al Agente de cobros, el número del producto.",
       "tech": "Sesión PRODUCT: número del producto"
     },
     {
       "op": "open",
       "chat": "agent",
       "transition": "cut",
-      "clock": "9:10"
+      "clock": "9:09"
     },
     {
       "op": "appear",
-      "ref": "02:0",
+      "ref": "01:0",
       "hold": 0.3
     },
     {
       "op": "send",
-      "ref": "02:1"
+      "ref": "01:1",
+      "hold": 2.6
+    },
+    {
+      "op": "send",
+      "ref": "01:2",
+      "key": {
+        "scene": "01-alta",
+        "name": "01-inicio"
+      }
     },
     {
       "op": "recv",
-      "ref": "02:2"
+      "ref": "02:2",
+      "key": {
+        "scene": "01-alta",
+        "name": "02-pide-datos"
+      }
     },
     {
       "op": "caption",
       "title": "Cuatro datos para registrar su CLABE en pey",
-      "body": "Negocio, titular, CLABE y tipo de persona. En la maqueta la CLABE aparece enmascarada.",
-      "tech": "POST /bank-account (en el diseño)"
+      "body": "Negocio, titular, CLABE y tipo de persona.",
+      "tech": "POST /bank-account"
     },
     {
       "op": "send",
@@ -87,7 +91,11 @@
     {
       "op": "recv",
       "ref": "02:4",
-      "hold": 3.0
+      "hold": 3.0,
+      "key": {
+        "scene": "01-alta",
+        "name": "03-confirma-datos"
+      }
     },
     {
       "op": "caption",
@@ -111,7 +119,11 @@
     },
     {
       "op": "recv",
-      "ref": "03:2"
+      "ref": "03:2",
+      "key": {
+        "scene": "01-alta",
+        "name": "04-autoriza-y-vincula"
+      }
     },
     {
       "op": "send",
@@ -121,15 +133,13 @@
       "op": "card",
       "kind": "timejump",
       "dur": 4.2,
-      "title": "Salto de tiempo escenificado",
-      "body": "Lunes 3 nov, 9:16  →  Jueves 6 nov, 8:02",
-      "note": "pey puede tardar hasta 5 días hábiles en activar la cuenta. En la demo lo adelantamos: no es un tiempo medido."
+      "title": "Días después"
     },
     {
       "op": "caption",
       "title": "pey activó la cuenta",
       "body": "Desde ahora el agente le propone cobros y le avisa de pagos en este mismo chat.",
-      "tech": "codiStatus: ACTIVE (simulado)"
+      "tech": "codiStatus: ACTIVE"
     },
     {
       "op": "appear",
@@ -143,7 +153,11 @@
     },
     {
       "op": "recv",
-      "ref": "05:1"
+      "ref": "05:1",
+      "key": {
+        "scene": "01-alta",
+        "name": "05-final"
+      }
     },
     {
       "op": "chapter",
@@ -157,7 +171,7 @@
     },
     {
       "op": "chatlist",
-      "screen": "01",
+      "screen": "00",
       "transition": "pop"
     },
     {
@@ -173,7 +187,11 @@
         "04:0",
         "04:1"
       ],
-      "clock": "10:06"
+      "clock": "10:06",
+      "key": {
+        "scene": "02-ana-presupuesto",
+        "name": "01-inicio"
+      }
     },
     {
       "op": "send",
@@ -185,11 +203,19 @@
     },
     {
       "op": "recv",
-      "ref": "04:4"
+      "ref": "04:4",
+      "key": {
+        "scene": "02-ana-presupuesto",
+        "name": "02-ana-acepta"
+      }
     },
     {
       "op": "send",
-      "ref": "04:5"
+      "ref": "04:5",
+      "key": {
+        "scene": "02-ana-presupuesto",
+        "name": "03-final"
+      }
     },
     {
       "op": "caption",
@@ -201,7 +227,11 @@
       "op": "banner",
       "from": "agent",
       "ref": "05:3",
-      "hold": 3.4
+      "hold": 3.4,
+      "key": {
+        "scene": "03-ana-autoriza",
+        "name": "01-inicio"
+      }
     },
     {
       "op": "open",
@@ -216,7 +246,11 @@
     {
       "op": "appear",
       "ref": "05:3",
-      "hold": 3.4
+      "hold": 3.4,
+      "key": {
+        "scene": "03-ana-autoriza",
+        "name": "02-propuesta"
+      }
     },
     {
       "op": "caption",
@@ -230,7 +264,11 @@
     },
     {
       "op": "recv",
-      "ref": "06:2"
+      "ref": "06:2",
+      "key": {
+        "scene": "03-ana-autoriza",
+        "name": "03-si"
+      }
     },
     {
       "op": "caption",
@@ -249,7 +287,11 @@
     },
     {
       "op": "recv",
-      "ref": "07:3"
+      "ref": "07:3",
+      "key": {
+        "scene": "03-ana-autoriza",
+        "name": "04-final"
+      }
     },
     {
       "op": "phone",
@@ -258,14 +300,18 @@
     {
       "op": "caption",
       "title": "Ana abre el enlace",
-      "body": "Página propia con el estilo del checkout de pey: total, productos y comisión ilustrativa. La parte de tarjeta es solo referencia visual.",
-      "tech": "GET /c/token · solo lectura"
+      "body": "Checkout de pey con total, productos y botón de CoDi.",
+      "tech": "app.mipey.mx · checkout CoDi"
     },
     {
       "op": "page",
       "screen": "08",
       "transition": "fade",
-      "hold": 3.0
+      "hold": 3.0,
+      "key": {
+        "scene": "04-ana-checkout-qr",
+        "name": "01-inicio"
+      }
     },
     {
       "op": "tap",
@@ -275,14 +321,18 @@
     {
       "op": "caption",
       "title": "Paga con CoDi desde su app bancaria",
-      "body": "El QR lo crea pey hacia la cuenta de Rafa. El de la demo no se puede pagar.",
+      "body": "El QR lo crea pey hacia la cuenta de Rafa.",
       "tech": "POST /codi/qr con bankAccountId de Rafa"
     },
     {
       "op": "page",
       "screen": "09",
       "transition": "push",
-      "hold": 3.0
+      "hold": 3.0,
+      "key": {
+        "scene": "04-ana-checkout-qr",
+        "name": "02-qr-codi"
+      }
     },
     {
       "op": "phone",
@@ -292,7 +342,7 @@
       "op": "caption",
       "title": "pey confirma el pago",
       "body": "El aviso llega del número del producto. «Pagado» solo cuando pey lo confirma: webhook firmado y verificado con la API.",
-      "tech": "Webhook verificado + GET /transaction (simulado)"
+      "tech": "Webhook verificado + GET /transaction"
     },
     {
       "op": "open",
@@ -312,7 +362,11 @@
     },
     {
       "op": "appear",
-      "ref": "11:0"
+      "ref": "11:0",
+      "key": {
+        "scene": "04-ana-checkout-qr",
+        "name": "03-final"
+      }
     },
     {
       "op": "chapter",
@@ -327,7 +381,11 @@
     {
       "op": "banner",
       "from": "luis",
-      "ref": "10:1"
+      "ref": "10:1",
+      "key": {
+        "scene": "05-luis-cotizacion",
+        "name": "01-inicio"
+      }
     },
     {
       "op": "open",
@@ -345,7 +403,7 @@
     {
       "op": "caption",
       "title": "La cotización llega por audio",
-      "body": "Nota de voz representada, sin audio real. En el diseño, el servicio la transcribe y extrae partidas y total.",
+      "body": "El servicio transcribe la nota de voz y extrae partidas y total.",
       "tech": "Extracción: el modelo propone hechos, no envía nada"
     },
     {
@@ -354,7 +412,11 @@
     },
     {
       "op": "recv",
-      "ref": "10:4"
+      "ref": "10:4",
+      "key": {
+        "scene": "05-luis-cotizacion",
+        "name": "02-luis-acepta"
+      }
     },
     {
       "op": "caption",
@@ -376,7 +438,11 @@
     {
       "op": "appear",
       "ref": "11:1",
-      "hold": 3.0
+      "hold": 3.0,
+      "key": {
+        "scene": "05-luis-cotizacion",
+        "name": "03-final"
+      }
     },
     {
       "op": "caption",
@@ -395,7 +461,11 @@
     },
     {
       "op": "recv",
-      "ref": "12:3"
+      "ref": "12:3",
+      "key": {
+        "scene": "06-luis-correccion",
+        "name": "01-inicio"
+      }
     },
     {
       "op": "caption",
@@ -417,7 +487,11 @@
     {
       "op": "appear",
       "ref": "13:0",
-      "hold": 3.4
+      "hold": 3.4,
+      "key": {
+        "scene": "06-luis-correccion",
+        "name": "02-pregunta-nueva"
+      }
     },
     {
       "op": "caption",
@@ -431,12 +505,16 @@
     },
     {
       "op": "recv",
-      "ref": "13:2"
+      "ref": "13:2",
+      "key": {
+        "scene": "06-luis-correccion",
+        "name": "03-final"
+      }
     },
     {
       "op": "caption",
       "title": "Luis recibe el cobro y manda su comprobante",
-      "body": "El cobro de $1,600 sale del WhatsApp de Rafa. Luis, por costumbre, manda una captura (ficticia).",
+      "body": "El cobro de $1,600 sale del WhatsApp de Rafa. Luis, por costumbre, manda una captura.",
       "tech": "Sesión MERCHANT → chat exacto de Luis"
     },
     {
@@ -446,12 +524,20 @@
     },
     {
       "op": "appear",
-      "ref": "14:0"
+      "ref": "14:0",
+      "key": {
+        "scene": "07-luis-comprobante",
+        "name": "01-inicio"
+      }
     },
     {
       "op": "recv",
       "ref": "14:1",
-      "typing": 1.0
+      "typing": 1.0,
+      "key": {
+        "scene": "07-luis-comprobante",
+        "name": "02-comprobante"
+      }
     },
     {
       "op": "chapter",
@@ -475,17 +561,25 @@
     },
     {
       "op": "appear",
-      "ref": "15:2"
+      "ref": "15:2",
+      "key": {
+        "scene": "07-luis-comprobante",
+        "name": "03-final"
+      }
     },
     {
       "op": "caption",
       "title": "Ahora sí: pey confirma el pago de Luis",
       "body": "La confirmación viene de pey, no de la foto.",
-      "tech": "Webhook verificado + GET /transaction (simulado)"
+      "tech": "Webhook verificado + GET /transaction"
     },
     {
       "op": "recv",
-      "ref": "16:0"
+      "ref": "16:0",
+      "key": {
+        "scene": "08-resumen",
+        "name": "01-inicio"
+      }
     },
     {
       "op": "caption",
@@ -500,7 +594,11 @@
     {
       "op": "recv",
       "ref": "16:2",
-      "hold": 4.5
+      "hold": 4.5,
+      "key": {
+        "scene": "08-resumen",
+        "name": "02-final"
+      }
     },
     {
       "op": "card",
@@ -511,9 +609,8 @@
         "Número del producto: alta, propuestas, «Sí» y avisos de pago",
         "WhatsApp de Rafa vinculado: lee solo los chats elegidos y envía los cobros aprobados",
         "Pagado = confirmado por pey; un comprobante queda como reportado",
-        "Confirmado por pey en la demo: $2,800.00"
-      ],
-      "note": "Demo guionizada con datos ficticios · no es una sesión real de WhatsApp ni de pey."
+        "Confirmado por pey hoy: $2,800.00"
+      ]
     }
   ]
 }

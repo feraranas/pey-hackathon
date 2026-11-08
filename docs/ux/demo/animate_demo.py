@@ -379,13 +379,15 @@ class Stage:
         return im
 
     def footer(self, d):
+        if not self.meta.get('watermark'):
+            return
         f = F(22, 750)
         t = self.meta['watermark']
         tw = f.getlength(t)
         x0, y0 = 1000, SH - 128
         d.rounded_rectangle([x0, y0, x0 + tw + 40, y0 + 44], radius=22, fill=(150, 72, 40))
         d.text((x0 + 20, y0 + 22), t, font=f, fill=(255, 255, 255), anchor='lm')
-        for k, ln in enumerate(wrap_px(self.meta['disclaimer'], F(19, 450), SW - x0 - 60)):
+        for k, ln in enumerate(wrap_px(self.meta.get('disclaimer', ''), F(19, 450), SW - x0 - 60)):
             d.text((x0, SH - 62 + k * 26), ln, font=F(19, 450), fill=(100, 106, 112))
 
     def compose(self, base, phone_rgb):
@@ -406,13 +408,16 @@ class Stage:
             a = ease(t * 3)
             if a > 0.05:
                 d.rounded_rectangle([cx, cy, cx + cw, cy + ch], radius=28, fill=(255, 255, 255, int(255 * a)))
-                d.text((cx + 60, cy + 54), step['title'].upper(), font=F(24, 750), fill=(150, 72, 40))
-                d.text((cx + 60, cy + 100), step['body'], font=F(52, 760), fill=INK)
+                if step.get('body'):
+                    d.text((cx + 60, cy + 54), step['title'].upper(), font=F(24, 750), fill=(150, 72, 40))
+                    d.text((cx + 60, cy + 100), step['body'], font=F(52, 760), fill=INK)
+                else:
+                    d.text((cx + 60, cy + 92), step['title'], font=F(64, 780), fill=INK)
                 # barra de progreso del salto
                 bx, by = cx + 60, cy + 196
                 d.rounded_rectangle([bx, by, cx + cw - 60, by + 14], radius=7, fill=(225, 228, 232))
                 d.rounded_rectangle([bx, by, bx + (cw - 120) * ease(t * 1.3), by + 14], radius=7, fill=GREEN_D)
-                for k, ln in enumerate(wrap_px(step['note'], F(28, 420), cw - 120)):
+                for k, ln in enumerate(wrap_px(step.get('note', ''), F(28, 420), cw - 120)):
                     d.text((cx + 60, cy + 240 + k * 40), ln, font=F(28, 420), fill=SUB)
             im = im.convert('RGB')
             self.footer(ImageDraw.Draw(im))
@@ -439,9 +444,10 @@ class Stage:
                     d.text((x0 + 36, yy + k * 46), ln, font=F(34, 450), fill=(220, 228, 232))
                 yy += 46 * len(wrap_px(b, F(34, 450), 1400)) + 18
             yy += 30
-        d.rounded_rectangle([x0, yy, x0 + 620, yy + 52], radius=26, fill=(150, 72, 40))
-        d.text((x0 + 310, yy + 26), self.meta['watermark'], font=F(24, 750), fill=(255, 255, 255), anchor='mm')
-        for k, ln in enumerate(wrap_px(step['note'], F(26, 420), 1500)):
+        if self.meta.get('watermark'):
+            d.rounded_rectangle([x0, yy, x0 + 620, yy + 52], radius=26, fill=(150, 72, 40))
+            d.text((x0 + 310, yy + 26), self.meta['watermark'], font=F(24, 750), fill=(255, 255, 255), anchor='mm')
+        for k, ln in enumerate(wrap_px(step.get('note', ''), F(26, 420), 1500)):
             d.text((x0, yy + 84 + k * 38), ln, font=F(26, 420), fill=(170, 182, 190))
         return im
 
@@ -449,8 +455,12 @@ class Stage:
 # ---------- director ----------
 
 class Director:
-    def __init__(self, spec, tl, sink):
+    def __init__(self, spec, tl, sink, keyframes=None):
         self.spec, self.tl, self.sink = spec, tl, sink
+        self.keyframes = Path(keyframes) if keyframes else None
+        self.keys = []
+        self.last_phone = None
+        self.snap = None
         self.meta = tl['meta']
         self.fps = self.meta['fps']
         self.screens = {sc['id']: sc for sc in spec['screens']}
@@ -481,6 +491,21 @@ class Director:
     def nf(self, sec):
         return max(1, round(sec * self.fps))
 
+    def compose(self, phone_rgb):
+        self.last_phone = phone_rgb
+        return self.stage.compose(self.base(), phone_rgb)
+
+    def save_key(self, s):
+        k = s.get('key')
+        if not k or not self.keyframes:
+            return
+        ph = self.snap or self.last_phone
+        out = self.keyframes / k['scene'] / f"{k['name']}.png"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        ph.save(out, optimize=True)
+        self.keys.append({'scene': k['scene'], 'file': f"{k['scene']}/{k['name']}.png",
+                          't': round(self.frames / self.fps, 2), 'step': s['op'], 'ref': s.get('ref') or s.get('screen') or s.get('chat')})
+
     def base(self):
         return self.stage.base(self.chapter, self.who, self.cap)
 
@@ -498,7 +523,7 @@ class Director:
         return val
 
     def still(self, sec):
-        frame = self.stage.compose(self.base(), self.cur_phone())
+        frame = self.compose(self.cur_phone())
         self.emit(frame, self.nf(sec))
 
     @staticmethod
@@ -537,7 +562,7 @@ class Director:
         self.cap = {k: s[k] for k in ('title', 'body', 'tech') if k in s}
         if self.view is None or old is None:
             return
-        new = self.stage.compose(self.base(), self.cur_phone())
+        new = self.compose(self.cur_phone())
         self.crossfade(old, new, 0.4)
 
     def crossfade(self, a, b, sec):
@@ -568,15 +593,15 @@ class Director:
                 if dim > 0:
                     canvas = Image.blend(canvas, Image.new('RGB', canvas.size, (0, 0, 0)), dim)
                 canvas.paste(over, (xo, 0))
-                self.emit(self.stage.compose(self.base(), canvas))
+                self.emit(self.compose(canvas))
         elif transition == 'fade' or old_frame is not None:
-            new = self.stage.compose(self.base(), new_phone)
+            new = self.compose(new_phone)
             if old_frame is not None:
                 self.crossfade(old_frame, new, 0.5 if transition == 'fade' else 0.3)
             else:
                 self.emit(new)
         else:
-            self.emit(self.stage.compose(self.base(), new_phone))
+            self.emit(self.compose(new_phone))
 
     def op_open(self, s):
         key = s['chat']
@@ -609,7 +634,7 @@ class Director:
         ph = self.cur_phone()
         n = self.nf(0.45)
         for i in range(n):
-            self.emit(self.stage.compose(self.base(), tap_overlay(ph, s['x'], s['y'], i / n)))
+            self.emit(self.compose(tap_overlay(ph, s['x'], s['y'], i / n)))
 
     def _append(self, key, m, hold=None, **kw):
         prev = list(self.chats[key])
@@ -620,7 +645,7 @@ class Director:
         view = self.views[key]
         for i in range(n):
             ph = self.phone.chat(view, self.chats[key], self.clock, anim=(prev, (i + 1) / n), **kw)
-            self.emit(self.stage.compose(self.base(), ph))
+            self.emit(self.compose(ph))
         if hold is None:
             hold = self.read_hold(m)
         if hold:
@@ -642,11 +667,11 @@ class Director:
         for i in range(n):
             k = max(1, round(len(txt) * (i + 1) / n))
             ph = self.phone.chat(view, self.chats[key], self.clock, composer=txt[:k], caret=(i // 8) % 2 == 0)
-            self.emit(self.stage.compose(self.base(), ph))
+            self.emit(self.compose(ph))
         ph = self.phone.chat(view, self.chats[key], self.clock, composer=txt, caret=False)
         nt = self.nf(0.3)
         for i in range(nt):
-            self.emit(self.stage.compose(self.base(), tap_overlay(ph, 368, rm.INPUT_TOP + 26, i / nt)))
+            self.emit(self.compose(tap_overlay(ph, 368, rm.INPUT_TOP + 26, i / nt)))
         self._append(key, m, s.get('hold'))
 
     def op_recv(self, s):
@@ -660,11 +685,11 @@ class Director:
         n = self.nf(0.25)
         for i in range(n):
             ph = self.phone.chat(view, self.chats[key], self.clock, anim=(prev, (i + 1) / n), subtitle=sub)
-            self.emit(self.stage.compose(self.base(), ph))
+            self.emit(self.compose(ph))
         n = self.nf(s.get('typing', 0.6))
         for i in range(n):
             ph = self.phone.chat(view, self.chats[key], self.clock, subtitle=sub, typing_phase=i / self.fps)
-            self.emit(self.stage.compose(self.base(), ph))
+            self.emit(self.compose(ph))
         self.chats[key].pop()
         self._append(key, m, s.get('hold'))
 
@@ -682,19 +707,22 @@ class Director:
             self.phone.draw_banner(im, title, body, t)
             return im.convert('RGB')
         for i in range(n_in):
-            self.emit(self.stage.compose(self.base(), phone_with((i + 1) / n_in)))
+            self.emit(self.compose(phone_with((i + 1) / n_in)))
         full = phone_with(1.0)
-        self.emit(self.stage.compose(self.base(), full), n_hold)
+        self.snap = full
+        self.emit(self.compose(full), n_hold)
         nt = self.nf(0.35)
         for i in range(nt):
-            self.emit(self.stage.compose(self.base(), tap_overlay(full, 196, 50, i / nt)))
+            self.emit(self.compose(tap_overlay(full, 196, 50, i / nt)))
 
     def run(self):
         for s in self.tl['steps']:
             t0 = self.frames / self.fps
             op = getattr(self, 'op_' + s['op'])
             pend = getattr(self, '_pending_fade', None)
+            self.snap = None
             op(s)
+            self.save_key(s)
             self.log.append((round(t0, 2), s['op'], s.get('ref') or s.get('title') or s.get('chat') or s.get('who') or s.get('screen') or ''))
         # cola final
         self.emit(self.last, self.nf(0.8))
@@ -708,9 +736,12 @@ def main():
     ap.add_argument('--at', nargs='*', type=float, default=[])
     ap.add_argument('--dry-run', action='store_true')
     ap.add_argument('--crf', default='20')
+    ap.add_argument('--keyframes', default=None, help='carpeta: PNG del teléfono (sin escenario) en los pasos con "key"')
     a = ap.parse_args()
     spec = json.loads((HERE.parent / 'screens.json').read_text(encoding='utf-8'))
     tl = json.loads((HERE / 'timeline.json').read_text(encoding='utf-8'))
+    rm.CLEAN = bool(tl['meta'].get('clean'))
+    spec = rm.apply_clean(spec)
     fps = tl['meta']['fps']
     proc = None
     want = {round(t * fps): t for t in a.at}
@@ -735,10 +766,12 @@ def main():
             im.save(Path(a.frames) / f"frame-{want[i]:07.2f}s.png")
         state['i'] += 1
 
-    if a.dry_run:
+    if a.dry_run or (a.keyframes and not a.out):
         sink = lambda im: state.__setitem__('i', state['i'] + 1)  # noqa: E731
-    d = Director(spec, tl, sink)
+    d = Director(spec, tl, sink, a.keyframes)
     total = d.run()
+    if a.keyframes:
+        (Path(a.keyframes) / 'manifest.json').write_text(json.dumps(d.keys, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     if proc:
         proc.stdin.close()
         proc.wait()
