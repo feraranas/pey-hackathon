@@ -89,7 +89,7 @@ Regla para marcar un cobro como **pagado verificado**: firma válida, transacci�
 
 ### Link de pago hospedado: sin paridad, fuera del MVP
 
-`POST /payment-link/create` pide `amount`, `successUrl`, `backUrl`, `hasTip`, `clientReferenceId` y `metadata`. **No tiene `bankAccountId`.** Según la documentación, el dinero iría a la cuenta ligada a la API key y no a la CLABE de cada comerciante, lo que rompe el ruteo por comerciante. Por eso el MVP es **QR primero**. El link queda como opción futura solo si pey documenta un receptor por link.
+`POST /payment-link/create` pide `amount`, `successUrl`, `backUrl`, `hasTip`, `clientReferenceId` y `metadata`. **No tiene `bankAccountId`.** Según la documentación, el dinero iría a la cuenta ligada a la API key y no a la CLABE de cada comerciante, lo que rompe el ruteo por comerciante. Por eso el MVP es **QR primero**. El link de pey queda como opción futura solo si pey documenta un receptor por link. Lo que la UX llama «enlace de pago» es una página propia opcional que muestra el QR de pey ([diseño](diseno.md#8b-página-de-cobro-opcional)); no es un link hospedado de pey.
 
 ### Ambiente de pruebas: no se asume
 

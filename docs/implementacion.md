@@ -35,16 +35,17 @@ Variables de entorno (solo nombres; los valores nunca van al repositorio): `PEY_
 | 5 | Onboarding | 30 min | Captura, confirmación, consentimiento versionado, `POST /bank-account`, consulta periódica de `GET` y webhook `bank.account.updated` | Sin "ACEPTO <código>" no se llama a la API; `PENDING` bloquea cobros reales; `ERROR` se detecta por `GET` |
 | 6 | Ensayo integral | 40 min | Flujo completo en un teléfono real con cuenta `ACTIVE`, o con proveedor falso etiquetado | Guion de [demo](#demo-de-5-minutos) completo sin pasos manuales ocultos |
 | 7 | Audio *(opcional)* | 30 min | Transcripción de notas de voz → mismo camino que el texto | Audio claro → misma propuesta que su texto; transcripción ambigua → aclaración |
+| 7b | Página de cobro *(opcional)* | 30 min | `GET /c/<código>` de solo lectura: desglose y QR de pey | Muestra solo intents vigentes; sustituido, vencido o pagado no muestra QR; no hay escrituras |
 | 8 | Entrega | 30 min | README de ejecución, video corto, límites declarados | El jurado entiende qué es real y qué es simulado |
 
-Las horas suman 7 h 10 min con el audio y 6 h 40 min sin él, más 1 h de margen.
+Las horas suman 6 h 40 min sin los cortes opcionales; el audio (7) y la página de cobro (7b) agregan 30 min cada uno. A eso se suma 1 h de margen.
 
 ### Puntos de corte
 
 - **Hora 3, sin QR creado contra pey** (real o falso): seguir solo con el proveedor falso, etiquetado como simulación.
 - **Hora 4, sin un adaptador WhatsApp estable:** demostrar el núcleo con un chat simulado en la terminal, declarado como tal. No se automatiza el portal de pey ni WhatsApp Web por otra vía.
 - **Hora 5, sin extracción confiable:** el comerciante dicta el cobro en su chat de control ("cobra 600 a Ana por anticipo") y el resto del flujo sigue igual.
-- El audio, el panel web, el link hospedado y MCP se cortan primero.
+- El audio, la página de cobro, el panel web, el link hospedado y MCP se cortan primero. Sin la página, el agente envía la imagen del QR con el desglose.
 
 ## Matriz de pruebas
 

@@ -281,6 +281,18 @@ reviews(id PK, kind, aggregate_id, opened_at, resolved_at NULL)
 - **Reinicios:** un cursor persistente, fijado al momento del emparejamiento, junto con `wa_events` UNIQUE, evita reprocesar. Los mensajes que llegaron mientras el servicio estaba caído **sí** se procesan. Un "SI" recibido así vale solo si cita el prompt o el código y el intent sigue vigente al procesarse. Si ya venció, se pide uno nuevo. La sincronización de historial anterior al emparejamiento se ignora.
 - **Secretos:** la sesión de Baileys, la API key, el secreto `whsec_` y la clave de OpenAI van en variables de entorno o en archivos fuera del repositorio. La sesión se cifra en reposo y Pino redacta CLABE, tokens y cuerpos de webhook.
 
+## 8b. Página de cobro (opcional)
+
+El comerciante habla de «enlace de pago», y para el cliente es más cómodo tocar un enlace que recibir una imagen. Como el link hospedado de pey no puede dirigir el dinero a la CLABE de cada comerciante, el enlace apunta a una **página propia de solo lectura**:
+
+- `GET /c/<código>` muestra negocio, desglose, monto y el `qrString` de pey renderizado como QR, junto con la vigencia.
+- El código del enlace no se puede adivinar en producción (en las maquetas se usa A17 por legibilidad). La página no crea cobros, no cambia estados y no pide datos al cliente.
+- Si el intent está sustituido, vencido o ya pagado, la página lo dice y no muestra el QR.
+- El mensaje del cliente sigue llevando el desglose completo. La página es un complemento, no un requisito.
+- **Pendiente de probar:** cómo se paga un QR abierto en el mismo teléfono depende de cada banco. Mientras no se pruebe, la página muestra el QR y una instrucción honesta, sin prometer que se pueda pagar con un toque.
+
+Flujo en pantallas: [docs/ux](ux/README.md).
+
 ## 9. Reglas duras (checklist)
 
 1. Ningún mensaje sale hacia un cliente sin un `Approval` del comerciante para ese intent exacto.

@@ -20,6 +20,12 @@ Mecánicos, hojalateros, plomeros, electricistas y otros oficios cobran por What
 
 Una captura del cliente cuenta como *reportado, pendiente de verificar*, y el efectivo como *registrado por ti*. Solo pey confirma un pago.
 
+## Cómo se ve
+
+![Rafa autoriza el cobro A17 en su chat privado](docs/ux/mockups/06-rafa-autoriza-a17-citando-la-propuesta.png)
+
+Ver el [flujo completo en pantallas](docs/ux/README.md) (maquetas ilustrativas con datos ficticios).
+
 ## Documentos
 
 | Documento | Contenido |
@@ -29,6 +35,7 @@ Una captura del cliente cuenta como *reportado, pendiente de verificar*, y el ef
 | [docs/integraciones.md](docs/integraciones.md) | Contratos verificados de pey (8 nov 2026), webhooks, Baileys, OpenAI, versiones y pendientes |
 | [docs/decisiones.md](docs/decisiones.md) | Alternativas comparadas y razones |
 | [docs/diagramas.md](docs/diagramas.md) | Arquitectura, flujo de extremo a extremo y cuatro diagramas de estado |
+| [docs/ux/README.md](docs/ux/README.md) | Flujo en 16 maquetas de WhatsApp: Rafa, su agente y dos clientes (datos ficticios) |
 
 ## Stack sugerido
 

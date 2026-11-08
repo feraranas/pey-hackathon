@@ -41,6 +41,7 @@ flowchart TB
     HT["Fastify HTTPS<br/>POST /webhooks/pey"]
     DB[("SQLite WAL<br/>better-sqlite3")]
     W["Worker de outbox<br/>y temporizador"]
+    PG["Página de cobro opcional<br/>GET /c/código, solo lectura:<br/>desglose + QR de pey"]
   end
 
   C -.->|"observación: contexto,<br/>nunca autoridad"| BA
@@ -59,6 +60,8 @@ flowchart TB
   HT -->|"firma válida: guardar<br/>y luego 2xx"| DB
   PEY -.->|"SPEI vía CoDi: el dinero<br/>no pasa por el servicio"| BANK[("Cuenta CLABE<br/>del comerciante")]
   Cli -.->|"paga con su app bancaria"| PEY
+  Cli -.->|"abre el enlace (opcional)"| PG
+  PG -->|"lee intent vigente"| DB
 
   classDef human fill:#fff3cd,stroke:#b58900,color:#222
   classDef ext fill:#e8f0fe,stroke:#1a73e8,color:#222
