@@ -1,0 +1,35 @@
+stateDiagram-v2
+  direction TB
+  state "Cobro individual: QR de monto fijo" as Cobro {
+    [*] --> SinPago
+    SinPago --> Pagado: transacción PAID verificada con base igual al monto
+    SinPago --> MontoDistinto: base distinta al monto del QR
+    Pagado --> PagoRepetido: otra transacción PAID del mismo IDC
+    SinPago --> PagoTardio: pago en un intent sustituido o expirado
+    MontoDistinto --> Revision
+    PagoRepetido --> Revision
+    PagoTardio --> Revision
+    Pagado --> [*]
+  }
+  state "Saldo de la WorkOrder" as Orden {
+    [*] --> TotalDesconocido
+    TotalDesconocido --> TotalDesconocido: cobro verificado, se muestra solo lo cobrado
+    TotalDesconocido --> PorCobrar: el comerciante fija el total
+    PorCobrar --> PagoParcial: verificados más efectivo menor al total
+    PagoParcial --> PagoParcial: otro cobro verificado o efectivo registrado
+    PorCobrar --> Liquidada: verificados más efectivo igual al total
+    PagoParcial --> Liquidada: verificados más efectivo igual al total
+    PagoParcial --> Sobrepago: suma mayor al total
+    Liquidada --> Sobrepago: entra dinero adicional
+    Liquidada --> PagoParcial: nueva versión con total mayor
+    Sobrepago --> RevisionSaldo: decisión humana
+  }
+  Pagado --> Orden: suma una vez por transactionId
+  note right of Orden
+    Fuentes separadas en cada aviso:
+    pago verificado por pey,
+    efectivo registrado por el comerciante,
+    comprobante reportado sin verificar.
+    Comprobantes no cambian el saldo.
+    Evento repetido por webhook-id no suma.
+  end note

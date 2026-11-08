@@ -1,0 +1,24 @@
+stateDiagram-v2
+  direction TB
+  [*] --> Detectado
+  Detectado --> Aclarando: monto, cliente o partidas ambiguos
+  Aclarando --> Detectado: el comerciante aclara en privado
+  Detectado --> EsperandoCuenta: receptor aún no ACTIVE
+  EsperandoCuenta --> Propuesto: receptor pasa a ACTIVE y sigue vigente
+  Detectado --> Propuesto: prompt privado con código único y digest
+  Propuesto --> Aprobado: SI citando el prompt o con el código, identidad propia, digest igual, vigente
+  Propuesto --> Rechazado: NO del comerciante
+  Propuesto --> Expirado: vence la oferta local
+  Propuesto --> Sustituido: cambia monto, partidas, cliente o receptor
+  Aprobado --> Sustituido: cambio antes de iniciar la creación remota
+  Aprobado --> [*]: entrega a la máquina de creación
+  Rechazado --> [*]
+  Expirado --> [*]
+  Sustituido --> [*]: nueva versión con código nuevo
+  note right of Propuesto
+    Varios ChargeIntent pueden estar
+    abiertos a la vez para el mismo
+    cliente, por ejemplo anticipo y saldo.
+    Un sí sin cita ni código pide aclaración.
+    Texto de cliente nunca aprueba.
+  end note

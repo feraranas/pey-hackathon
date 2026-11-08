@@ -1,0 +1,42 @@
+flowchart TB
+  subgraph WA["WhatsApp (cuenta del comerciante)"]
+    C["Chat con cliente<br/>(seleccionado en allowlist)"]
+    S["Chat de control<br/>(chat consigo mismo)"]
+  end
+  Cli(["Cliente"]) <-->|"mensajes, audios,<br/>QR + desglose"| C
+  M(["Comerciante"]) <-->|"conversa y cobra"| C
+  M <-->|"SI CÓDIGO, onboarding,<br/>efectivo, consultas"| S
+
+  subgraph APP["Servicio único Node.js + TypeScript (un proceso, un volumen)"]
+    BA["Adaptador WhatsApp<br/>Baileys: sesión cifrada, JID propio,<br/>cursor, IDs preasignados"]
+    EX["Extracción<br/>OpenAI: transcripción +<br/>salida estructurada Zod"]
+    CO["Coordinador<br/>único escritor del dominio:<br/>órdenes, intents, aprobación,<br/>saldo, outbox"]
+    PA["Adaptador pey<br/>REST + verificación<br/>Standard Webhooks"]
+    HT["Fastify HTTPS<br/>POST /webhooks/pey"]
+    DB[("SQLite WAL<br/>better-sqlite3")]
+    W["Worker de outbox<br/>y temporizador"]
+  end
+
+  C -.->|"observación: contexto,<br/>nunca autoridad"| BA
+  S -->|"comando con identidad<br/>propia verificada"| BA
+  BA -->|"observación autenticada"| CO
+  CO -->|"texto o audio a hechos"| EX
+  EX -->|"CandidateFacts<br/>sin capacidad de enviar"| CO
+  CO <-->|"transacciones cortas,<br/>sin red dentro"| DB
+  W -->|"reclama trabajo durable"| DB
+  W -->|"crear QR / registrar CLABE /<br/>consultar estado"| PA
+  W -->|"prompt privado o QR al<br/>destinatario exacto"| BA
+  BA -->|"envío"| S
+  BA -->|"envío autorizado"| C
+  PA <-->|"HTTPS Bearer"| PEY[("API pey<br/>api.pey.mx")]
+  PEY -->|"webhook firmado"| HT
+  HT -->|"firma válida: guardar<br/>y luego 2xx"| DB
+  PEY -.->|"SPEI vía CoDi: el dinero<br/>no pasa por el servicio"| BANK[("Cuenta CLABE<br/>del comerciante")]
+  Cli -.->|"paga con su app bancaria"| PEY
+
+  classDef human fill:#fff3cd,stroke:#b58900,color:#222
+  classDef ext fill:#e8f0fe,stroke:#1a73e8,color:#222
+  classDef core fill:#e6f4ea,stroke:#188038,color:#222
+  class M,Cli human
+  class PEY,BANK ext
+  class CO,DB core
