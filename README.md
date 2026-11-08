@@ -2,9 +2,22 @@
 
 **Cobros CoDi por WhatsApp para quien vive de su oficio.** Un agente observa los chats con clientes que el comerciante elige. Cuando detecta un trabajo acordado, le pregunta en privado si quiere enviar un QR de pey con el desglose. Solo con su "sí" lo envía al cliente correcto, y avisa cuando pey confirma el pago.
 
-> **Estado:** solo diseño y plan. Todavía no hay aplicación, conexión a WhatsApp, cuentas registradas ni transacciones.
+> **Estado:** MVP de texto implementado, con demo simulada y pruebas de recuperación. La extracción con OpenAI y una consulta autenticada de lectura a pey se comprobaron. Falta la prueba con un teléfono vinculado y una cuenta receptora activa. Ver [evidencia y límites](docs/verification/README.md).
 
 ![Arquitectura](docs/diagrams/arquitectura.svg)
+
+## Ejecutar la demo
+
+```bash
+nvm use
+npm ci
+npm run verify
+npm run demo
+```
+
+La demo no necesita claves y no mueve dinero. Usa SQLite, el coordinador y la ruta HTTP de webhooks reales con proveedores falsos etiquetados. El [video](docs/verification/demo.mp4) reproduce su salida; no es una captura de WhatsApp.
+
+Para conectar una sesión real, sigue [ejecutar el servicio](docs/operacion.md). Configura un volumen persistente, el chat del dueño, los chats permitidos y el webhook firmado. Cada envío de QR necesita un `SI código` separado.
 
 ## El problema
 
@@ -30,6 +43,8 @@ Ver el [flujo completo en pantallas](docs/ux/README.md) (maquetas ilustrativas c
 
 | Documento | Contenido |
 |---|---|
+| [docs/operacion.md](docs/operacion.md) | Instalación, variables, comandos, respaldos y ejecución con contenedor |
+| [docs/verification/README.md](docs/verification/README.md) | Pruebas ejecutadas, integraciones reales verificadas y límites |
 | [docs/diseno.md](docs/diseno.md) | Uso, modelo de dominio, máquinas de estado, módulos, interfaces, esquema y reglas duras |
 | [docs/implementacion.md](docs/implementacion.md) | Stack, cortes verticales con estimaciones, criterios de aceptación, puntos de corte, matriz de pruebas y demo |
 | [docs/integraciones.md](docs/integraciones.md) | Contratos verificados de pey (8 nov 2026), webhooks, Baileys, OpenAI, versiones y pendientes |
@@ -37,7 +52,7 @@ Ver el [flujo completo en pantallas](docs/ux/README.md) (maquetas ilustrativas c
 | [docs/diagramas.md](docs/diagramas.md) | Arquitectura, flujo de extremo a extremo y cuatro diagramas de estado |
 | [docs/ux/README.md](docs/ux/README.md) | Flujo en 16 maquetas de WhatsApp: Rafa, su agente y dos clientes (datos ficticios) |
 
-## Stack sugerido
+## Stack implementado
 
 Node.js 24 LTS + TypeScript · Fastify · Baileys 7 · SQLite (WAL, `better-sqlite3`) · SDK de OpenAI con Zod · `standardwebhooks` · Vitest · Pino con redacción. Un solo servicio persistente con HTTPS y un volumen, sin Redis, colas externas ni microservicios. Ver [implementación](docs/implementacion.md#stack) y [decisiones](docs/decisiones.md).
 

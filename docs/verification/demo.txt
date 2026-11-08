@@ -1,0 +1,23 @@
+SIMULACIÓN COMPLETA. Sin WhatsApp, IA ni dinero reales.
+[SIMULACIÓN] → 5215550000001@s.whatsapp.net: 🤖 Agente de cobros
+Confirma Taller Demo · Comerciante Ficticio · CLABE ****2952 · PERSON. Declaro ser titular de esta cuenta y autorizo su registro en pey para recibir cobros CoDi. Acepto los términos de pey (v2026-10-13). Responde ACEPTO 2250B86F.
+[SIMULACIÓN] → 5215550000001@s.whatsapp.net: 🤖 Agente de cobros
+Cuenta registrada. La activación puede tardar hasta cinco días hábiles.
+SIMULACIÓN: PENDING bloquea cobros. Activación ficticia explícita.
+[SIMULACIÓN] → 5215550000001@s.whatsapp.net: 🤖 Agente de cobros
+Cobro FF6D7B88 · orden 23d5f0fe-bc9c-4cc0-8ad9-c740efeb5b8c · 5215550000002@s.whatsapp.net · DEPOSIT $600.00 MXN · total $1200.00 · balatas $800.00 + mano de obra $400.00. Responde SI FF6D7B88 o cita este mensaje con sí.
+[SIMULACIÓN] → 5215550000001@s.whatsapp.net: 🤖 Agente de cobros
+Indica el código o cita el mensaje del cobro. 
+[SIMULACIÓN] → 5215550000002@s.whatsapp.net: [QR ficticio] 🤖 Cobro automático
+DEPOSIT: balatas $800.00 + mano de obra $400.00. Total $1200.00. QR $600.00 MXN. Paga desde tu app bancaria con CoDi.
+[SIMULACIÓN] → 5215550000001@s.whatsapp.net: 🤖 Agente de cobros
+Recibiste $600.00 por FF6D7B88 (verificado por pey). Verificado $600.00 · efectivo registrado $0.00 · falta $600.00.
+[SIMULACIÓN] → 5215550000001@s.whatsapp.net: 🤖 Agente de cobros
+Comprobante reportado, pendiente de verificar. El saldo no cambia.
+[SIMULACIÓN] → 5215550000001@s.whatsapp.net: 🤖 Agente de cobros
+Efectivo $100.00 registrado por ti. Verificado $600.00 · efectivo $100.00 · falta $500.00.
+[SIMULACIÓN] → 5215550000001@s.whatsapp.net: 🤖 Agente de cobros
+Cobro 80633530 · orden 23d5f0fe-bc9c-4cc0-8ad9-c740efeb5b8c · 5215550000002@s.whatsapp.net · BALANCE $500.00 MXN · total $1200.00 · balatas $800.00 + mano de obra $400.00. Responde SI 80633530 o cita este mensaje con sí.
+[SIMULACIÓN] → 5215550000001@s.whatsapp.net: 🤖 Agente de cobros
+El cobro ya no está vigente o cambió; solicita una nueva propuesta.
+PASS: consentimiento, propuesta, aprobación ligada, QR, webhook firmado, deduplicación, efectivo, captura y revisión.

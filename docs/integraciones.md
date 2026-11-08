@@ -1,5 +1,7 @@
 # Integraciones: contratos verificados y pendientes
 
+> El MVP de texto ya está implementado. Consulta [evidencia, entrega y pendientes](verification/README.md). El contenido siguiente conserva el plan y la investigación originales.
+
 Consulta realizada el **8 de noviembre de 2026** (hora de Ciudad de México) contra la documentación pública. Lo que aparece aquí como "verificado" se leyó en las fuentes listadas al final. **No** se hicieron llamadas autenticadas a la API ni transacciones: todo lo que dependa de una respuesta real queda en [Pendiente de comprobar en integración](#pendiente-de-comprobar-en-integración).
 
 - OpenAPI: `https://docs.pey.mx/openapi.json`, `info.version` = `2026-10-20`, servidor único `https://api.pey.mx`.

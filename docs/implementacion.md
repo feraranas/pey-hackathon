@@ -1,5 +1,7 @@
 # Plan de implementación
 
+> El MVP de texto ya está implementado. Consulta [evidencia, entrega y pendientes](verification/README.md). El contenido siguiente conserva el plan y la investigación originales.
+
 Las estimaciones son orientativas, no medidas, para **una persona**. El total es de unas **6 h 40 min de construcción sin audio (7 h 10 min con audio), más 1 h de margen**, dentro de un plazo de menos de 18 horas. Si una integración se retrasa, se recortan funciones; **nunca** se recortan la autorización ligada, la propiedad de la cuenta, los centavos, la deduplicación ni el manejo de estados inciertos.
 
 Prioridad: **texto primero**. El audio es opcional y se agrega solo si el camino de texto ya funciona de punta a punta.

@@ -1,0 +1,20 @@
+ts	phase	decision	why	evidence	result
+2026-11-08T16:16:51Z	frame	Priorizar texto y conservar invariantes de autorización y pagos	Plan original excede tres horas para una persona	docs/implementacion.md	open
+2026-11-08T16:20:00Z	isolation	Crear worktree y asignar archivos exclusivos a tres agentes Terra	Evitar escrituras concurrentes sobre mismos módulos	docs/verification/workflow.md	worktree created
+2026-11-08T16:25:00Z	integration	Pruebas locales con proveedores falsos y adaptadores reales sin conexión	Credenciales de pey y OpenAI no disponibles en variables de sesión	.env.example	live unverified
+2026-11-08T16:40:12.354733+00:00	audit	Los tres timestamps iniciales son aproximaciones manuales de planificación	No representan medición precisa de cada operación	docs/verification/workflow.md	supersedes timing precision of initial rows
+2026-11-08T16:40:12.354953+00:00	design	Incorporar efab8b9 del branch remoto con maquetas y página opcional	La referencia local inicial tenía 7f34bab	docs/ux/README.md	incorporated
+2026-11-08T16:40:12.354956+00:00	verification	Corregir entrega obsoleta y recuperación tras caída	La revisión encontró carreras entre edición y llamadas de red	test/core.test.ts	tests pass
+2026-11-08T16:40:12.354957+00:00	identity	Reservar probe y esperar ACK antes de habilitar comandos de WhatsApp	Distinguir dueño y eco sin perder comandos offline	test/whatsapp.test.ts	mock verified; live pending
+2026-11-08T16:40:12.354959+00:00	runtime	Suspender propuestas antes de esperar extracción tras mensaje del comerciante	Una aprobación podría llegar durante los 30 segundos de espera	test/runtime.test.ts	tests pass
+2026-11-08T16:40:12.354960+00:00	integrations	Usar .env original solo al ejecutar solicitudes autorizadas	El usuario indicó ubicación de las claves	scripts/check-integrations.ts	keys not copied or printed
+2026-11-08T16:40:12.354961+00:00	integrations	Repetir OpenAI tras recarga y conservar cobro manual como alternativa	La primera prueba devolvió credit_balance_exhausted	docs/verification/integrations.json	real extraction verified
+2026-11-08T16:40:12.354962+00:00	delivery	Excluir audio y página opcionales de la implementación	Priorizar aceptación del camino de texto e invariantes dentro de tres horas	docs/implementacion.md	documented
+2026-11-08T16:40:12.354963+00:00	packaging	Añadir herramientas de compilación a etapa build del contenedor	better-sqlite3 requiere compilación en Linux ARM64	Dockerfile	rebuild in progress
+2026-11-08T16:43:22.936984+00:00	review	Suspender también ante correcciones del cliente durante la espera	El código anterior podía aprobarse antes de completar la extracción	test/runtime.test.ts	regression test passes
+2026-11-08T16:43:22.937098+00:00	verification	Limitar Vitest a test/**/*.test.ts	La compilación había duplicado el descubrimiento; 130 no eran pruebas únicas	vitest.config.ts	67 unique tests
+2026-11-08T16:43:22.937100+00:00	packaging	Contenedor construido y probado sin red	Verificar artefacto ejecutable y usuario sin privilegios	docs/verification/docker-smoke.txt	supersedes rebuild in progress; PASS
+2026-11-08T16:43:22.937102+00:00	integrations	Confirmar pey GET /transaction/api-key con HTTP200 y tres casos OpenAI	Separar autenticación de lectura de cobros reales no efectuados	docs/verification/integrations.json	PASS within stated scope
+2026-11-08T16:43:22.937103+00:00	audit	Revisión independiente Terra de código y entrega	Cerrar errores demostrables y conservar límites de evidencia	docs/verification/README.md	live WhatsApp and money unverified
+2026-11-08T16:45:08.650827+00:00	delivery	Guardar implementación fe3486c y evidencia por separado	Separar código de guía y artefactos	fe3486c	committed locally
+2026-11-08T16:45:08.651151+00:00	publication	Revisión automática rechazó git push	Destino y autorización de publicación requieren comprobación adicional	git remote origin	publication blocked; local work proceeds

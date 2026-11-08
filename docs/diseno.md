@@ -1,6 +1,6 @@
 # Diseño
 
-> Este documento define el diseño y el plan de construcción: tipos, interfaces y algoritmos en pseudocódigo. Todavía **no hay aplicación**. Los bloques de código son bocetos y no están pensados para compilarse.
+> Este documento define el diseño y el plan de construcción: tipos, interfaces y algoritmos en pseudocódigo. La implementación vive en `src/`; consulta su [estado verificado](verification/README.md). Los bloques de este documento siguen siendo bocetos de diseño, no código compilable.
 
 ## 1. Problema y alcance
 
