@@ -12,9 +12,9 @@ Mecánicos, hojalateros, plomeros, electricistas y otros oficios cobran por What
 
 ## La propuesta
 
-1. **Alta por WhatsApp:** el comerciante da alias, nombre legal, CLABE y tipo de persona, confirma y acepta. El agente la registra en pey y avisa que la activación puede tardar hasta cinco días hábiles.
+1. **Alta por WhatsApp:** el comerciante le escribe al número público del producto, da alias, nombre legal, CLABE y tipo de persona, y responde «Sí, autorizo». El agente la registra en pey y avisa que la activación puede tardar hasta cinco días hábiles.
 2. **Detección:** en los chats elegidos, el agente identifica cuándo hay un trabajo y un monto acordados (texto primero; notas de voz opcionales).
-3. **Autorización:** prompt privado con un código, por ejemplo "¿Le envío a Ana el anticipo de $600? Responde **SI A7K2**". Solo ese "sí" autoriza **un** QR.
+3. **Autorización:** pregunta privada en el chat del comerciante consigo mismo, por ejemplo "¿Le envío a Ana el anticipo de $600?". Un **«Sí»** simple autoriza **un** cobro: el modelo entiende el lenguaje, pero el cliente, el monto y la versión salen del estado guardado. Si hay dos preguntas abiertas, el agente pregunta cuál.
 4. **Cobro:** QR CoDi de monto fijo hacia la CLABE del comerciante, enviado con su desglose al cliente exacto.
 5. **Confirmación:** un webhook firmado de pey, verificado contra la API, genera el aviso "Recibiste $600 (verificado por pey)" con el saldo de la orden.
 
@@ -22,7 +22,7 @@ Una captura del cliente cuenta como *reportado, pendiente de verificar*, y el ef
 
 ## Cómo se ve
 
-![Rafa autoriza el cobro A17 en su chat privado](docs/ux/mockups/06-rafa-autoriza-a17-citando-la-propuesta.png)
+![Rafa responde «Sí» a la propuesta de cobro en su chat privado](docs/ux/mockups/06-rafa-responde-si.png)
 
 Ver el [flujo completo en pantallas](docs/ux/README.md) (maquetas ilustrativas con datos ficticios).
 
@@ -35,7 +35,7 @@ Ver el [flujo completo en pantallas](docs/ux/README.md) (maquetas ilustrativas c
 | [docs/integraciones.md](docs/integraciones.md) | Contratos verificados de pey (8 nov 2026), webhooks, Baileys, OpenAI, versiones y pendientes |
 | [docs/decisiones.md](docs/decisiones.md) | Alternativas comparadas y razones |
 | [docs/diagramas.md](docs/diagramas.md) | Arquitectura, flujo de extremo a extremo y cuatro diagramas de estado |
-| [docs/ux/README.md](docs/ux/README.md) | Flujo en 16 maquetas de WhatsApp: Rafa, su agente y dos clientes (datos ficticios) |
+| [docs/ux/README.md](docs/ux/README.md) | Flujo en 17 maquetas: alta con el número del producto, Rafa con su agente, dos clientes y el checkout CoDi (datos ficticios) |
 
 ## Stack sugerido
 

@@ -41,7 +41,7 @@ flowchart TB
     HT["Fastify HTTPS<br/>POST /webhooks/pey"]
     DB[("SQLite WAL<br/>better-sqlite3")]
     W["Worker de outbox<br/>y temporizador"]
-    PG["Página de cobro opcional<br/>GET /c/código, solo lectura:<br/>desglose + QR de pey"]
+    PG["Página de cobro opcional<br/>GET /c/token, solo lectura:<br/>desglose + QR de pey"]
   end
 
   C -.->|"observación: contexto,<br/>nunca autoridad"| BA
@@ -84,16 +84,16 @@ flowchart TD
   A["Evento nuevo de Baileys"] --> B{"¿Chat en allowlist o chat<br/>de control, y evento no<br/>procesado antes del cursor?"}
   B -- No --> Z["Ignorar sin guardar contenido"]
   B -- Sí --> C{"¿Chat de control, fromMe,<br/>JID propio y ID que no<br/>es eco del bot?"}
-  C -- "Sí: comando" --> J{"¿Respuesta citando el prompt<br/>o código único vigente?"}
+  C -- "Sí: comando" --> J{"¿El sí se liga a una sola<br/>pregunta abierta y vigente?<br/>(estado, no el modelo)"}
   C -- "No: contexto de cliente<br/>o del comerciante" --> D["Extraer hechos con evidencia<br/>texto primero, audio opcional"]
   D --> E{"¿Trabajo y monto acordados<br/>sin ambigüedad?"}
   E -- No --> F["Esperar más contexto o pedir<br/>aclaración privada"]
   E -- Sí --> G["Crear o versionar WorkOrder<br/>y ChargeIntent con monto fijo:<br/>anticipo, saldo o total"]
   G --> H{"¿Cuenta receptora propia<br/>en ACTIVE?"}
   H -- No --> H2["Avisar en privado: cuenta<br/>pendiente; no ofrecer cobro real"]
-  H -- Sí --> I["Prompt privado con código:<br/>cliente, partidas, monto, vigencia"]
+  H -- Sí --> I["Pregunta privada natural:<br/>¿Le envío a Ana $1,200?"]
   I --> J
-  J -- No --> F
+  J -- "No: 0 o 2+ abiertas,<br/>sustituida o vencida" --> F
   J -- Sí --> K{"¿Mismo digest, vigente,<br/>cuenta ACTIVE del mismo<br/>comerciante?"}
   K -- No --> L["Rechazar; proponer nueva versión"]
   K -- Sí --> M["Una transacción SQL: aprobación +<br/>trabajo de creación de QR"]
@@ -101,7 +101,7 @@ flowchart TD
   N --> O{"¿Resultado?"}
   O -- "201" --> R["Guardar IDC y qrString;<br/>encolar entrega al JID exacto"]
   O -- "4xx definitivo" --> Q["Fallo conocido: avisar;<br/>no enviar nada"]
-  O -- "timeout / 5xx / crash" --> P["Creación incierta: sin qrString<br/>no hay nada que enviar;<br/>nuevo intento solo con nuevo SI"]
+  O -- "timeout / 5xx / crash" --> P["Creación incierta: sin qrString<br/>no hay nada que enviar;<br/>nuevo intento solo con nuevo sí"]
   R --> S["Preasignar ID de mensaje, persistir,<br/>enviar imagen QR + desglose"]
   S --> T{"¿Eco o ack con ese ID?"}
   T -- Sí --> U["Entregado; no significa pagado"]
@@ -176,8 +176,8 @@ stateDiagram-v2
   Aclarando --> Detectado: el comerciante aclara en privado
   Detectado --> EsperandoCuenta: receptor aún no ACTIVE
   EsperandoCuenta --> Propuesto: receptor pasa a ACTIVE y sigue vigente
-  Detectado --> Propuesto: prompt privado con código único y digest
-  Propuesto --> Aprobado: SI citando el prompt o con el código, identidad propia, digest igual, vigente
+  Detectado --> Propuesto: pregunta privada natural, snapshot con digest
+  Propuesto --> Aprobado: sí del dueño ligado a esta única pregunta abierta, digest igual, vigente
   Propuesto --> Rechazado: NO del comerciante
   Propuesto --> Expirado: vence la oferta local
   Propuesto --> Sustituido: cambia monto, partidas, cliente o receptor
@@ -185,12 +185,13 @@ stateDiagram-v2
   Aprobado --> [*]: entrega a la máquina de creación
   Rechazado --> [*]
   Expirado --> [*]
-  Sustituido --> [*]: nueva versión con código nuevo
+  Sustituido --> [*]: nueva versión con pregunta nueva
   note right of Propuesto
     Varios ChargeIntent pueden estar
     abiertos a la vez para el mismo
     cliente, por ejemplo anticipo y saldo.
-    Un sí sin cita ni código pide aclaración.
+    Con 2 o más preguntas abiertas plausibles,
+    un sí simple pide aclaración.
     Texto de cliente nunca aprueba.
   end note
 ```

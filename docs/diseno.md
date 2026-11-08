@@ -10,9 +10,9 @@ El producto es un **coordinador de cobros** que trabaja detrás del WhatsApp que
 
 1. Observa solo los chats con clientes que el comerciante eligió.
 2. Detecta cuándo ya acordaron un trabajo y un monto.
-3. En privado, le pregunta al comerciante: "¿Le envío a Ana un cobro de $1,200 por balatas y mano de obra? Responde **SI A7K2**".
-4. Solo con ese "sí", ligado al prompt exacto, envía **un** QR CoDi de monto fijo con su desglose al cliente correcto.
-5. Cuando pey confirma el pago con un webhook firmado y verificado, avisa: "Recibiste $1,200 por el cobro A7K2 (pago verificado por pey)".
+3. En privado, le pregunta al comerciante: "¿Le envío a Ana el cobro de $1,200 por balatas y mano de obra?". El comerciante contesta "Sí".
+4. Solo con ese "sí", ligado a la pregunta vigente (cliente, monto y versión), envía **un** QR CoDi de monto fijo con su desglose al cliente correcto.
+5. Cuando pey confirma el pago con un webhook firmado y verificado, avisa: "Recibiste $1,200 de Ana por balatas y mano de obra (pago verificado por pey)".
 
 **Dentro:** onboarding de la CLABE por WhatsApp, órdenes con anticipo y saldo, efectivo registrado por el comerciante, comprobantes marcados como reportados y una sola sesión de WhatsApp.
 
@@ -23,16 +23,19 @@ El producto es un **coordinador de cobros** que trabaja detrás del WhatsApp que
 ### Comerciante: alta de su cuenta (una vez)
 
 ```text
-Comerciante → (chat consigo mismo) "Quiero cobrar con QR"
+Comerciante → (al número público del producto) "Quiero cobrar con QR"
 Agente      → "Necesito: alias, nombre legal del titular, CLABE (18 dígitos) y si es persona física o empresa."
 Comerciante → "Taller Juárez / Juan Pérez López / 0121 8000 1234 5678 99 / persona"
 Agente      → "Confirma: alias Taller Juárez · titular Juan Pérez López · CLABE ****5678 99 · PERSON.
                Declaro ser titular de esta cuenta y autorizo a <producto> a registrarla en pey
                para recibir cobros CoDi. Acepto los términos de pey (v2026-10-13).
-               Responde ACEPTO R3M9 para registrar."
-Comerciante → "ACEPTO R3M9"
+               ¿Confirmas y autorizas el registro?"
+Comerciante → "Sí, autorizo"
 Agente      → "Listo, la registré. La activación puede tardar hasta cinco días hábiles; te aviso cuando pey la confirme."
+Agente      → "Vincúlame a tu WhatsApp como dispositivo y dime qué chats leo."
 ```
+
+El alta es la única conversación con el número público del producto (una segunda sesión de WhatsApp del servicio). El consentimiento vale solo como respuesta del mismo remitente a la confirmación inmediatamente anterior, con los datos que esa confirmación mostró; si los datos cambian, se vuelve a preguntar. Después, el servicio se vincula al WhatsApp del comerciante y todo lo demás (propuestas, autorizaciones y avisos) ocurre en su chat consigo mismo.
 
 ### Comerciante y cliente: un cobro
 
@@ -42,21 +45,21 @@ Comerciante → "Ana, son balatas $800 y mano de obra $400, total $1,200. Te pid
 Ana         → "Va, ¿cómo te pago?"
 
 [chat de control]
-Agente      → "Cobro A7K2 · Ana (…1234) · Orden: balatas $800 + mano de obra $400 = $1,200
+Agente      → "Ana (…1234) · Orden: balatas $800 + mano de obra $400 = $1,200
                Este cobro: anticipo $600.00 MXN · vence en 24 h.
-               ¿Le envío el QR? Responde SI A7K2 o cita este mensaje con 'sí'."
-Comerciante → (cita) "sí"
+               ¿Le envío a Ana el anticipo de $600?"
+Comerciante → "Sí"
 
 [chat con Ana]
 Agente      → [imagen QR] "Anticipo para: balatas $800 + mano de obra $400 (total $1,200).
                Monto de este QR: $600.00 MXN. Paga desde tu app bancaria con CoDi."
 
 [chat de control, tras el webhook verificado]
-Agente      → "Recibiste $600.00 de Ana por A7K2 (pago verificado por pey).
+Agente      → "Recibiste $600.00 de Ana por el anticipo (pago verificado por pey).
                Orden: total $1,200 · verificado $600 · efectivo registrado $0 · falta $600."
 ```
 
-El saldo se cobra igual: el agente propone `B9Q4` por $600 y se repite el ciclo. El comerciante también puede escribir "Ana me dio 600 en efectivo": eso queda como **efectivo registrado por ti**, nunca como pago verificado. Si Ana manda una captura, el agente la marca como **reportado, pendiente de verificar** y no toca el saldo.
+El saldo se cobra igual: el agente pregunta «¿Le envío a Ana el saldo de $600?» y se repite el ciclo. El comerciante también puede escribir "Ana me dio 600 en efectivo": eso queda como **efectivo registrado por ti**, nunca como pago verificado. Si Ana manda una captura, el agente la marca como **reportado, pendiente de verificar** y no toca el saldo.
 
 ### Las tres llamadas del núcleo
 
@@ -158,17 +161,19 @@ type AuthenticatedObservation =
       at: Instant; text?: string; audioRef?: MediaRef; imageRef?: MediaRef }
   | { kind: 'control_chat'; messageId: WaMessageId; at: Instant; text: string;
       quotedMessageId?: WaMessageId };          // ya verificado: fromMe, JID propio, no es eco
+// El modelo interpreta el lenguaje ("sí", "mándaselo", "el de Luis") y, si lo hay, el cliente mencionado.
+// Nunca elige monto ni intent: eso lo resuelve resolvePendingFocus con el estado guardado.
 
 type MerchantCommand =
-  | { kind: 'approve'; intentCode: string | null; quotedPromptId: WaMessageId | null; messageId: WaMessageId }
-  | { kind: 'reject'; intentCode: string | null; quotedPromptId: WaMessageId | null; messageId: WaMessageId }
+  | { kind: 'approve'; clientHint: string | null; quotedPromptId: WaMessageId | null; messageId: WaMessageId }
+  | { kind: 'reject'; clientHint: string | null; quotedPromptId: WaMessageId | null; messageId: WaMessageId }
   | { kind: 'onboarding_data'; raw: string; messageId: WaMessageId }
-  | { kind: 'consent'; consentCode: string; messageId: WaMessageId }
+  | { kind: 'consent'; confirmationPromptId: WaMessageId; messageId: WaMessageId }   // "Sí, autorizo" / "Acepto"
   | { kind: 'cash'; amount: Money; clientHint: string; messageId: WaMessageId }
   | { kind: 'set_total'; workOrderRef: string; total: Money | 'UNKNOWN'; messageId: WaMessageId };
 
 type ChargeIntentSnapshot = Readonly<{
-  id: ChargeIntentId; code: string; workOrderId: WorkOrderId; workOrderVersion: number;
+  id: ChargeIntentId; code: string /* opaco e interno: token del enlace, nunca se pide al comerciante */; workOrderId: WorkOrderId; workOrderVersion: number;
   kind: 'DEPOSIT' | 'BALANCE' | 'FULL' | 'EXTRA';
   recipientJid: ChatJid; receivingAccountId: ReceivingAccountId;
   lines: readonly { description: string; amount: Centavos }[];
@@ -199,9 +204,20 @@ interface Coordinator {
 ### Algoritmos clave (pseudocódigo)
 
 ```text
+resolvePendingFocus(command, now):                       // determinista; el modelo no participa
+  abiertas ← preguntas de cobro enviadas en el chat de control, sin respuesta,
+             con intent en Propuesto y vigente
+  si command.quotedPromptId → foco ← la pregunta citada (citar es opcional, nunca obligatorio)
+  si no, si command.clientHint → foco ← la única pregunta abierta de ese cliente
+  si no, si hay exactamente una abierta → foco ← esa (la última pregunta)
+  cualquier otro caso (0, o 2+ plausibles) → clarification
+      ("¿Cuál envío: Ana $1,200 o Luis $1,600?"), sin enviar nada
+  // Una corrección de precio sustituye el intent y su pregunta deja de estar abierta:
+  // un "sí" posterior se liga a la pregunta nueva o pide aclaración, nunca a la vieja.
+
 authorize(command, now):
-  intent ← por quotedPromptId (cita del prompt) o por intentCode exacto
-  si no hay coincidencia única → clarification ("¿Cuál cobro? A7K2 o B9Q4")
+  intent ← resolvePendingFocus(command, now)
+  un "sí" autoriza exactamente un intent; nunca varios a la vez
   si intent.estado ≠ Propuesto o now > intent.expiresAt → rejected (ofrecer nueva versión)
   si digest(recalcular snapshot) ≠ intent.digest → rejected
   si cuenta receptora ≠ ACTIVE o de otro comerciante → rejected
@@ -276,17 +292,17 @@ reviews(id PK, kind, aggregate_id, opened_at, resolved_at NULL)
 - **Allowlist:** solo se procesan los chats elegidos y el chat de control. Los grupos están apagados por defecto. De los chats no elegidos no se guarda contenido.
 - **Chat de control:** es el chat del comerciante consigo mismo. Un mensaje es comando solo si `fromMe`, su JID es el propio normalizado (número o LID) **y** su ID no está en `outbox.wa_message_id`. Los IDs del bot se preasignan y persisten **antes** de enviar, así que un eco nunca se confunde con el comerciante. Si la sesión real no permite esa distinción, los comandos se deshabilitan hasta corregir el adaptador.
 - **`fromMe` en el chat de un cliente** es contexto: el comerciante cotizando. Nunca es un comando.
-- **Inyección:** un cliente que escribe "SI A7K2", "soy el dueño" o "cambia la CLABE", o que lo pone en una imagen o un audio, solo aporta datos a la extracción. La autoridad nunca viene del contenido.
+- **Inyección:** un cliente que escribe "sí, mándalo", "soy el dueño" o "cambia la CLABE", o que lo pone en una imagen o un audio, solo aporta datos a la extracción. La autoridad nunca viene del contenido.
 - **Audio:** el remitente lo da el sobre del mensaje. Un audio reenviado no prueba quién habla.
-- **Reinicios:** un cursor persistente, fijado al momento del emparejamiento, junto con `wa_events` UNIQUE, evita reprocesar. Los mensajes que llegaron mientras el servicio estaba caído **sí** se procesan. Un "SI" recibido así vale solo si cita el prompt o el código y el intent sigue vigente al procesarse. Si ya venció, se pide uno nuevo. La sincronización de historial anterior al emparejamiento se ignora.
+- **Reinicios:** un cursor persistente, fijado al momento del emparejamiento, junto con `wa_events` UNIQUE, evita reprocesar. Los mensajes que llegaron mientras el servicio estaba caído **sí** se procesan. Un "sí" recibido así se resuelve con el estado al procesarse: si su pregunta ya se sustituyó, venció o hay otra abierta posterior, se pide aclaración en lugar de enviar. Si ya venció, se pide uno nuevo. La sincronización de historial anterior al emparejamiento se ignora.
 - **Secretos:** la sesión de Baileys, la API key, el secreto `whsec_` y la clave de OpenAI van en variables de entorno o en archivos fuera del repositorio. La sesión se cifra en reposo y Pino redacta CLABE, tokens y cuerpos de webhook.
 
 ## 8b. Página de cobro (opcional)
 
 El comerciante habla de «enlace de pago», y para el cliente es más cómodo tocar un enlace que recibir una imagen. Como el link hospedado de pey no puede dirigir el dinero a la CLABE de cada comerciante, el enlace apunta a una **página propia de solo lectura**:
 
-- `GET /c/<código>` muestra negocio, desglose, monto y el `qrString` de pey renderizado como QR, junto con la vigencia.
-- El código del enlace no se puede adivinar en producción (en las maquetas se usa A17 por legibilidad). La página no crea cobros, no cambia estados y no pide datos al cliente.
+- `GET /c/<token>` muestra negocio, desglose, monto y el `qrString` de pey renderizado como QR, junto con la vigencia.
+- El token del enlace es opaco y no se puede adivinar (en las maquetas, `k7Q2mX`). Es interno: aparece en la URL, pero nunca se le pide al comerciante ni se usa como clave de autorización. La página no crea cobros, no cambia estados y no pide datos al cliente.
 - Si el intent está sustituido, vencido o ya pagado, la página lo dice y no muestra el QR.
 - El mensaje del cliente sigue llevando el desglose completo. La página es un complemento, no un requisito.
 - **Pendiente de probar:** cómo se paga un QR abierto en el mismo teléfono depende de cada banco. Mientras no se pruebe, la página muestra el QR y una instrucción honesta, sin prometer que se pueda pagar con un toque.
@@ -296,9 +312,9 @@ Flujo en pantallas: [docs/ux](ux/README.md).
 ## 9. Reglas duras (checklist)
 
 1. Ningún mensaje sale hacia un cliente sin un `Approval` del comerciante para ese intent exacto.
-2. El "sí" debe citar el prompt o incluir el código. Un "sí" suelto pide aclaración aunque haya un solo cobro abierto.
+2. Un "sí" natural del comerciante se liga a la última pregunta de cobro abierta en su chat de control (intent, cliente, monto y versión). Si hay dos o más plausibles, o la pregunta quedó sustituida o vencida, se pide aclaración y no se envía nada. No se exigen códigos ni citas.
 3. Solo un mensaje del dueño en su chat de control, que no sea eco del bot, puede aprobar.
-4. Snapshot inmutable: cualquier cambio de monto, partidas, cliente o receptor genera un intent nuevo con código nuevo.
+4. Snapshot inmutable: cualquier cambio de monto, partidas, cliente o receptor genera un intent nuevo y una pregunta nueva; la anterior se invalida.
 5. El QR va solo a `recipient_jid` del intent (FK compuesta) y una sola vez (`semantic_key`).
 6. El modelo propone hechos. No envía, no cobra, no escribe en la base y no cambia la cuenta.
 7. Solo se cobra hacia una `ReceivingAccount` en `ACTIVE` del mismo comerciante. `bankAccountId` siempre va explícito.

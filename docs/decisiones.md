@@ -29,9 +29,16 @@ El coordinador llama a cinco o seis funciones del adaptador de pey. El modelo no
 
 Un agente que lee chats y opera el portal parece simple, pero dejaría las reglas de dinero (quién autoriza, a quién se envía, cuándo está pagado) en manos del prompt. Además, la ingeniería inversa del portal está prohibida en los términos (cl. 4.2). Las reglas viven en código y en restricciones SQL.
 
-## 4. Autorización: cita del prompt o código único
+## 4. Autorización: «sí» natural ligado por estado, no por códigos
 
-Se comparó contra la opción de aceptar un "sí" suelto cuando hay una sola oferta abierta. Esa opción es más cómoda, pero ambigua tras reconexiones o mensajes cruzados, y obligaría a limitar las órdenes a un cobro abierto por cliente, lo que impediría cobrar anticipo y saldo a la vez. Se eligió la cita del prompt o el código: es casi igual de cómoda y está ligada a un digest.
+Primero se diseñó con un código por cobro («SI A7K2») o una respuesta citada obligatoria. Es inequívoco, pero se siente como un ritual y no es como habla un comerciante. Se eligió un «sí» natural a la última pregunta:
+
+- **El modelo entiende el lenguaje:** si el mensaje es un sí o un no, y si menciona a un cliente («mándaselo a Luis»).
+- **El estado decide a qué se liga:** la pregunta de cobro abierta en el chat de control, con su intent inmutable (cliente, partidas, monto, versión y digest). El modelo nunca elige monto ni destinatario.
+- **Si hay duda, se pregunta:** con dos preguntas abiertas plausibles, o si la pregunta se sustituyó o venció, el agente pide una aclaración breve («¿Cuál envío: Ana $1,200 o Luis $1,600?»). Citar el mensaje sigue funcionando, pero es opcional.
+- **Un sí autoriza un solo cobro.** El «sí» de un cliente, un eco del bot o una respuesta a una propuesta vieja nunca autoriza.
+
+Anticipo y saldo abiertos a la vez siguen siendo posibles: cada uno tiene su pregunta y, si coinciden, el agente pregunta cuál. Los identificadores internos (token del enlace, ID del intent) existen, pero no se muestran como algo que el comerciante tenga que escribir.
 
 ## 5. Órdenes con varios cobros de monto fijo
 

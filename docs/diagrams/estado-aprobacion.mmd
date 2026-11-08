@@ -5,8 +5,8 @@ stateDiagram-v2
   Aclarando --> Detectado: el comerciante aclara en privado
   Detectado --> EsperandoCuenta: receptor aún no ACTIVE
   EsperandoCuenta --> Propuesto: receptor pasa a ACTIVE y sigue vigente
-  Detectado --> Propuesto: prompt privado con código único y digest
-  Propuesto --> Aprobado: SI citando el prompt o con el código, identidad propia, digest igual, vigente
+  Detectado --> Propuesto: pregunta privada natural, snapshot con digest
+  Propuesto --> Aprobado: sí del dueño ligado a esta única pregunta abierta, digest igual, vigente
   Propuesto --> Rechazado: NO del comerciante
   Propuesto --> Expirado: vence la oferta local
   Propuesto --> Sustituido: cambia monto, partidas, cliente o receptor
@@ -14,11 +14,12 @@ stateDiagram-v2
   Aprobado --> [*]: entrega a la máquina de creación
   Rechazado --> [*]
   Expirado --> [*]
-  Sustituido --> [*]: nueva versión con código nuevo
+  Sustituido --> [*]: nueva versión con pregunta nueva
   note right of Propuesto
     Varios ChargeIntent pueden estar
     abiertos a la vez para el mismo
     cliente, por ejemplo anticipo y saldo.
-    Un sí sin cita ni código pide aclaración.
+    Con 2 o más preguntas abiertas plausibles,
+    un sí simple pide aclaración.
     Texto de cliente nunca aprueba.
   end note

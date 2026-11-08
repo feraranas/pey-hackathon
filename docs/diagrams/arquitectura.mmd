@@ -15,7 +15,7 @@ flowchart TB
     HT["Fastify HTTPS<br/>POST /webhooks/pey"]
     DB[("SQLite WAL<br/>better-sqlite3")]
     W["Worker de outbox<br/>y temporizador"]
-    PG["Página de cobro opcional<br/>GET /c/código, solo lectura:<br/>desglose + QR de pey"]
+    PG["Página de cobro opcional<br/>GET /c/token, solo lectura:<br/>desglose + QR de pey"]
   end
 
   C -.->|"observación: contexto,<br/>nunca autoridad"| BA

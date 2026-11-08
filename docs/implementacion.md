@@ -31,11 +31,11 @@ Variables de entorno (solo nombres; los valores nunca van al repositorio): `PEY_
 | 1 | Núcleo de cobro | 90 min | `WorkOrder`, `ChargeIntent`, snapshot y digest, `authorize`, outbox, saldo derivado, con proveedor y WhatsApp falsos | Ver la [matriz](#matriz-de-pruebas): aprobación ligada, sustitución por cambio, destinatario exacto, anticipo y saldo simultáneos |
 | 2 | Adaptador pey | 60 min | `createQr`, `getTransaction`, `listQrTransactions`, `registerAccount`, `getAccount`; ruta `POST /webhooks/pey` con `standardwebhooks` | Fixtures de la documentación; firma inválida → 401 sin guardar; webhook repetido → 1 aplicación; timeout → `CreacionIncierta` sin reintento |
 | 3 | Adaptador WhatsApp | 75 min | Emparejamiento, allowlist, chat de control, JID propio, cursor, IDs preasignados, envío de imagen QR y desglose | Eco del bot no aprueba; `fromMe` en chat de cliente no aprueba; reinicio no duplica propuestas; comando recibido durante la caída se procesa si sigue vigente |
-| 4 | Extracción (texto) | 45 min | Prompt y esquema Zod → `CandidateFacts` con evidencia; disparo con espera de ~30 s tras el último mensaje | Cotización clara → propuesta; cotización ambigua → aclaración privada; texto de cliente con "SI A7K2" no autoriza |
-| 5 | Onboarding | 30 min | Captura, confirmación, consentimiento versionado, `POST /bank-account`, consulta periódica de `GET` y webhook `bank.account.updated` | Sin "ACEPTO <código>" no se llama a la API; `PENDING` bloquea cobros reales; `ERROR` se detecta por `GET` |
+| 4 | Extracción (texto) | 45 min | Prompt y esquema Zod → `CandidateFacts` con evidencia; disparo con espera de ~30 s tras el último mensaje | Cotización clara → propuesta; cotización ambigua → aclaración privada; texto de cliente con "sí, mándalo" no autoriza |
+| 5 | Onboarding | 30 min | Captura, confirmación, consentimiento versionado, `POST /bank-account`, consulta periódica de `GET` y webhook `bank.account.updated` | Sin "Sí, autorizo" o "Acepto" a la confirmación inmediata, con esos mismos datos, no se llama a la API; `PENDING` bloquea cobros reales; `ERROR` se detecta por `GET` |
 | 6 | Ensayo integral | 40 min | Flujo completo en un teléfono real con cuenta `ACTIVE`, o con proveedor falso etiquetado | Guion de [demo](#demo-de-5-minutos) completo sin pasos manuales ocultos |
 | 7 | Audio *(opcional)* | 30 min | Transcripción de notas de voz → mismo camino que el texto | Audio claro → misma propuesta que su texto; transcripción ambigua → aclaración |
-| 7b | Página de cobro *(opcional)* | 30 min | `GET /c/<código>` de solo lectura: desglose y QR de pey | Muestra solo intents vigentes; sustituido, vencido o pagado no muestra QR; no hay escrituras |
+| 7b | Página de cobro *(opcional)* | 30 min | `GET /c/<token>` de solo lectura: desglose y QR de pey | Muestra solo intents vigentes; sustituido, vencido o pagado no muestra QR; no hay escrituras |
 | 8 | Entrega | 30 min | README de ejecución, video corto, límites declarados | El jurado entiende qué es real y qué es simulado |
 
 Las horas suman 6 h 40 min sin los cortes opcionales; el audio (7) y la página de cobro (7b) agregan 30 min cada uno. A eso se suma 1 h de margen.
@@ -51,10 +51,13 @@ Las horas suman 6 h 40 min sin los cortes opcionales; el audio (7) y la página 
 
 | Caso | Resultado esperado |
 |---|---|
-| El cliente escribe "SI A7K2" o "cambia la CLABE" | Ninguna acción autorizada |
-| El comerciante escribe "sí" sin citar ni poner código, con 1 o 2 cobros abiertos | Aclaración; nada se envía |
-| Anticipo y saldo abiertos a la vez para el mismo cliente | Ambos se aprueban y envían por separado |
-| Cambia el precio después del prompt y antes del "sí" | Intent sustituido; nuevo código |
+| El cliente escribe "sí, mándalo" o "cambia la CLABE" | Ninguna acción autorizada |
+| El comerciante escribe "Sí" con una sola pregunta de cobro abierta | Se aprueba ese intent (cliente, monto y versión de la pregunta) y solo ese |
+| El comerciante escribe "Sí" con dos preguntas abiertas plausibles (Ana y Luis, o anticipo y saldo) | Aclaración breve; nada se envía |
+| El comerciante escribe "Sí, el de Luis" con dos abiertas | Se aprueba solo la de Luis |
+| Anticipo y saldo abiertos a la vez para el mismo cliente | Se aprueban y envían por separado, uno por respuesta |
+| Cambia el precio después de la pregunta y antes del "sí" | Intent sustituido; la pregunta vieja deja de valer y se hace una nueva |
+| "Sí" que responde (citando) una propuesta ya sustituida o vencida | Aclaración; nada se envía |
 | La cuenta está en `PENDING` o es de otro comerciante | No se crea QR |
 | Replay de Baileys, evento duplicado, eco del bot o `fromMe` en chat de cliente | Ni aprobación ni envío adicional |
 | Webhook con la misma firma reenviado | 1 sola aplicación (`webhook_id`) |
@@ -74,9 +77,9 @@ Las horas suman 6 h 40 min sin los cortes opcionales; el audio (7) y la página 
 ## Demo de 5 minutos
 
 1. Alta: el comerciante comparte su CLABE, confirma y acepta, y el agente responde "la activación puede tardar hasta cinco días hábiles". Se muestra el estado `PENDING`.
-2. Cobro con una cuenta ya `ACTIVE`: cotización en el chat con el cliente, prompt privado, "sí" citado, y QR con desglose al cliente correcto.
+2. Cobro con una cuenta ya `ACTIVE`: cotización en el chat con el cliente, pregunta privada («¿Le envío a Ana el cobro de $1,200?»), "Sí" simple, y enlace con desglose al cliente correcto.
 3. Pago: aviso "Recibiste $600 (verificado por pey)" con el saldo. Reenviar el mismo webhook no cambia el saldo.
 4. Anticipo y saldo en la misma orden; efectivo registrado mostrado aparte.
-5. Robustez: una captura no marca pagado y un cambio de monto invalida el código anterior.
+5. Robustez: una captura no marca pagado y un cambio de monto invalida la pregunta anterior y el agente pregunta de nuevo.
 
 Si no hay cuenta `ACTIVE` o no se decide hacer una prueba real con centavos, el paso 3 usa el proveedor falso con la leyenda **SIMULACIÓN** visible.

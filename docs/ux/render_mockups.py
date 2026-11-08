@@ -52,7 +52,7 @@ PAD_X, PAD_Y = 10, 7
 HEADER_BOTTOM = 104
 INPUT_TOP = 852 - 84
 
-EMOJI_RE = re.compile('([\U0001F300-\U0001FAFF\u2600-\u27BF\u2B50\u2B55\u2190-\u21FF]\uFE0F?)')
+EMOJI_RE = re.compile('([\U0001F300-\U0001FAFF\u2600-\u27BF\u2B50\u2B55]\uFE0F?)')
 
 
 def p(v):
@@ -672,58 +672,21 @@ def render_chatlist(sc, avatars):
     return img
 
 
-def render_page(sc, avatars):
-    pg = sc['page']
-    img = Image.new('RGBA', (p(W), p(H)), (255, 255, 255, 255))
+PEY_BLUE = (37, 99, 235)
+PAY_BLUE = (45, 106, 228)
+BORDER = (209, 213, 219)
+MUTED = (107, 114, 128)
+INK = (17, 24, 39)
+
+
+def safari_bar(img, domain):
     d = ImageDraw.Draw(img)
-    status_bar(img, sc['clock'], (255, 255, 255))
-    y = 62
-    rr(d, (16, y, W - 16, y + 30), 8, (255, 243, 205))
-    tag = 'MAQUETA · DEMO NO PAGABLE'
-    draw_run(img, W / 2 - run_width(tag, 12.5, 700) / 2, y + 8, tag, 12.5, 700, (150, 90, 0))
-    y += 48
-    avatar(img, 40, y + 18, 18, 'R', avatars)
-    draw_run(img, 66, y + 3, pg['business'], 19, 700, TEXT)
-    draw_run(img, 66, y + 26, f"Cobro {pg['code']}", 13.5, 400, META)
-    y += 56
-    draw_run(img, 24, y, 'Total a pagar', 13.5, 500, META)
-    draw_run(img, 24, y + 18, pg['amount'], 30, 700, TEXT)
-    y += 62
-    for k, v in pg['lines']:
-        draw_run(img, 24, y, k, 15, 400, TEXT)
-        draw_run(img, W - 24 - run_width(v, 15, 500), y, v, 15, 500, TEXT)
-        y += 24
-    d.line([(p(24), p(y + 2)), (p(W - 24), p(y + 2))], fill=(230, 230, 230), width=p(1))
-    y += 16
-    qs = 196
-    qx = W / 2 - qs / 2
-    rr(d, (qx - 10, y - 10, qx + qs + 10, y + qs + 10), 14, None, outline=(225, 225, 225), width=p(1))
-    img.paste(qr_image(pg['qr'], p(qs)), (p(qx), p(y)))
-    bw = 92
-    rr(d, (W / 2 - bw / 2, y + qs / 2 - 14, W / 2 + bw / 2, y + qs / 2 + 14), 7, (200, 40, 40))
-    draw_run(img, W / 2 - run_width('DEMO', 15, 800) / 2, y + qs / 2 - 9, 'DEMO', 15, 800, (255, 255, 255))
-    y += qs + 20
-    t = 'DEMO · NO PAGABLE'
-    draw_run(img, W / 2 - run_width(t, 12.5, 700) / 2, y, t, 12.5, 700, (200, 40, 40))
-    y += 22
-    draw_run(img, W / 2 - run_width(pg['expires'], 13, 500) / 2, y, pg['expires'], 13, 500, META)
-    y += 26
-    lines = wrap(pg['help'], W - 48, 14)
-    for ln in lines:
-        draw_run(img, 24, y, ''.join(t for t, _ in ln).rstrip(), 14, 400, TEXT)
-        y += 19
-    y += 10
-    for ln in wrap(pg['footer'], W - 48, 12):
-        txt = ''.join(t for t, _ in ln).rstrip()
-        draw_run(img, W / 2 - run_width(txt, 12, 400) / 2, y, txt, 12, 400, META)
-        y += 16
-    # barra inferior de Safari
     by = H - 92
     d.rectangle([0, p(by), p(W), p(H)], fill=(246, 246, 246))
     d.line([(0, p(by)), (p(W), p(by))], fill=SEP, width=1)
     rr(d, (12, by + 8, W - 12, by + 46), 12, (255, 255, 255))
     draw_run(img, 26, by + 18, 'AA', 14, 600, ICON)
-    dom = f"🔒 {pg['domain']}"
+    dom = f"🔒 {domain}"
     draw_run(img, W / 2 - run_width(dom, 15, 500) / 2, by + 18, dom, 15, 500, ICON)
     d.arc([p(W - 40), p(by + 19), p(W - 26), p(by + 33)], 300, 240, fill=ICON, width=p(1.6))
     ly = by + 66
@@ -735,6 +698,154 @@ def render_page(sc, avatars):
     rr(d, (348, ly - 8, 362, ly + 6), 2, None, outline=(0, 122, 255), width=p(1.6))
     rr(d, (352, ly - 4, 366, ly + 10), 2, (246, 246, 246), outline=(0, 122, 255), width=p(1.6))
     home_indicator(img)
+
+
+def centered(img, y, text, size, weight, color):
+    draw_run(img, W / 2 - run_width(text, size, weight) / 2, y, text, size, weight, color)
+
+
+def pey_header(img, title):
+    """Barra superior como el checkout de referencia: casa, comercio, logo pey."""
+    d = ImageDraw.Draw(img)
+    cy = 80
+    # casa
+    d.line([(p(26), p(cy - 1)), (p(36), p(cy - 10)), (p(46), p(cy - 1))], fill=INK, width=p(1.9), joint='curve')
+    rr(d, (29, cy - 4, 43, cy + 9), 2, None, outline=INK, width=p(1.9))
+    rr(d, (34, cy + 2, 38, cy + 9), 1, INK)
+    centered(img, cy - 10, title, 15.5, 650, INK)
+    draw_run(img, W - 30 - run_width('pey', 23, 800), cy - 16, 'pey', 23, 800, PEY_BLUE)
+    d.line([(0, p(106)), (p(W), p(106))], fill=(229, 231, 235), width=p(0.8))
+
+
+def concept_pill(img, y, text):
+    d = ImageDraw.Draw(img)
+    tw = run_width(text, 10.5, 600)
+    rr(d, (W / 2 - tw / 2 - 10, y, W / 2 + tw / 2 + 10, y + 20), 10, (254, 243, 199))
+    centered(img, y + 4, text, 10.5, 600, (146, 64, 14))
+
+
+def field(d, img, box, placeholder, color=(156, 163, 175), size=15):
+    rr(d, box, 6, (255, 255, 255), outline=BORDER, width=p(0.8))
+    draw_run(img, box[0] + 11, (box[1] + box[3]) / 2 - size * 0.62, placeholder, size, 400, color)
+
+
+def codi_button(d, img, box):
+    rr(d, box, 5, (0, 0, 0))
+    cx, cy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+    t = 'CoDi'
+    tw = run_width(t, 18, 800)
+    draw_run(img, cx - tw / 2, cy - 11.5, t, 18, 800, (255, 255, 255))
+    # arco del logotipo sobre la "o"
+    ox = cx - tw / 2 + run_width('C', 18, 800) + run_width('o', 18, 800) / 2
+    d.arc([p(ox - 6), p(cy - 15), p(ox + 6), p(cy - 5)], 200, 340, fill=(255, 255, 255), width=p(1.6))
+
+
+def render_checkout(sc, avatars):
+    pg = sc['page']
+    img = Image.new('RGBA', (p(W), p(H)), (255, 255, 255, 255))
+    d = ImageDraw.Draw(img)
+    status_bar(img, sc['clock'], (255, 255, 255))
+    pey_header(img, pg['business'])
+    concept_pill(img, 114, pg['concept'])
+    L, R = 32, W - 32
+    draw_run(img, L, 144, pg['label_total'], 14, 650, INK)
+    rr(d, (L, 164, R, 202), 14, (255, 255, 255), outline=BORDER, width=p(0.9))
+    d.rounded_rectangle([p(L), p(164), p(L + 34), p(202)], radius=p(14), fill=(243, 244, 246))
+    d.rectangle([p(L + 20), p(164.5), p(L + 34), p(201.5)], fill=(243, 244, 246))
+    d.line([(p(L + 34), p(164)), (p(L + 34), p(202))], fill=BORDER, width=p(0.9))
+    draw_run(img, L + 12, 173, '$', 15, 400, INK)
+    draw_run(img, L + 46, 173, pg['amount_input'], 15, 400, INK)
+    tot = f"Total: {pg['total']}"
+    tw = run_width(tot, 21, 650)
+    draw_run(img, W / 2 - tw / 2 - 8, 220, tot, 21, 650, INK)
+    ax = W / 2 + tw / 2 + 4
+    d.polygon([(p(ax), p(236)), (p(ax + 10), p(236)), (p(ax + 5), p(230))], fill=INK)
+    d.line([(p(L), p(258)), (p(R), p(258))], fill=(229, 231, 235), width=p(0.8))
+    rows = [(pg['label_products'], pg['products'], False), (pg['label_fee'], pg['fee'], True)]
+    y = 268
+    for k, v, info in rows:
+        draw_run(img, 104, y, k, 11, 400, MUTED)
+        if info:
+            ix = 104 + run_width(k, 11, 400) + 6
+            d.ellipse([p(ix), p(y + 2), p(ix + 10), p(y + 12)], outline=PEY_BLUE, width=p(1))
+            draw_run(img, ix + 3.6, y + 1.5, 'i', 8, 700, PEY_BLUE)
+        draw_run(img, 288 - run_width(v, 11, 400), y, v, 11, 400, INK)
+        y += 20
+    centered(img, y + 2, pg['fee_note'], 9.5, 400, MUTED)
+    d.line([(p(L), p(326)), (p(R), p(326))], fill=(229, 231, 235), width=p(0.8))
+    # tarjeta contenedora
+    rr(d, (L, 334, R, 706), 9, (255, 255, 255), outline=(229, 231, 235), width=p(0.9))
+    IL, IR = L + 15, R - 15
+    codi_button(d, img, (IL, 348, IR, 390))
+    oy = 410
+    t = pg['label_or']
+    tw = run_width(t, 12, 400)
+    d.line([(p(IL), p(oy + 7)), (p(W / 2 - tw / 2 - 10), p(oy + 7))], fill=(229, 231, 235), width=p(0.8))
+    d.line([(p(W / 2 + tw / 2 + 10), p(oy + 7)), (p(IR), p(oy + 7))], fill=(229, 231, 235), width=p(0.8))
+    centered(img, oy, t, 12, 400, (75, 85, 99))
+    # sección de tarjeta (referencia visual, deshabilitada)
+    draw_run(img, IL, 432, pg['label_card'], 13, 400, (55, 65, 81))
+    field(d, img, (IL, 451, IR, 489), '1234 1234 1234 1234')
+    d.ellipse([p(IR - 34), p(463), p(IR - 20), p(477)], fill=(235, 0, 27))
+    d.ellipse([p(IR - 26), p(463), p(IR - 12), p(477)], fill=(247, 158, 27))
+    mid = W / 2
+    draw_run(img, IL, 503, pg['label_exp'], 13, 400, (55, 65, 81))
+    draw_run(img, mid + 4, 503, pg['label_cvc'], 13, 400, (55, 65, 81))
+    field(d, img, (IL, 522, mid - 4, 560), 'MM / AA')
+    field(d, img, (mid + 4, 522, IR, 560), 'CVC')
+    rr(d, (IR - 30, 533, IR - 12, 547), 2, None, outline=(156, 163, 175), width=p(1))
+    d.line([(p(IR - 30), p(537)), (p(IR - 12), p(537))], fill=(156, 163, 175), width=p(1.4))
+    draw_run(img, IL, 574, pg['label_country'], 13, 400, (55, 65, 81))
+    field(d, img, (IL, 593, IR, 631), pg['country'], INK)
+    d.line([(p(IR - 22), p(609)), (p(IR - 17), p(614)), (p(IR - 12), p(609))], fill=(75, 85, 99), width=p(1.5))
+    rr(d, (IL, 645, IR, 689), 6, PAY_BLUE)
+    centered(img, 657, pg['pay'], 14.5, 650, (255, 255, 255))
+    # velo sobre la parte de tarjeta: fuera del MVP
+    veil = Image.new('RGBA', (p(IR - IL + 8), p(689 - 424 + 6)), (255, 255, 255, 150))
+    img.alpha_composite(veil, (p(IL - 4), p(424)))
+    tag = pg['card_note']
+    tw = run_width(tag, 11.5, 650)
+    rr(d, (W / 2 - tw / 2 - 12, 605 - 47, W / 2 + tw / 2 + 12, 605 - 23), 12, (55, 65, 81))
+    centered(img, 605 - 42, tag, 11.5, 650, (255, 255, 255))
+    safari_bar(img, pg['domain'])
+    return img
+
+
+def render_codiqr(sc, avatars):
+    pg = sc['page']
+    img = Image.new('RGBA', (p(W), p(H)), (255, 255, 255, 255))
+    d = ImageDraw.Draw(img)
+    status_bar(img, sc['clock'], (255, 255, 255))
+    pey_header(img, pg['business'])
+    concept_pill(img, 114, pg['concept'])
+    L, R = 32, W - 32
+    centered(img, 148, f"Total: {pg['total']}", 21, 650, INK)
+    centered(img, 178, pg['detail'], 12, 400, MUTED)
+    codi_button(d, img, (L + 15, 220, R - 15, 262))
+    qs = 210
+    qx, qy = W / 2 - qs / 2, 282
+    img.paste(qr_image(pg['qr'], p(qs)), (p(qx), p(qy)))
+    bw = 92
+    rr(d, (W / 2 - bw / 2, qy + qs / 2 - 14, W / 2 + bw / 2, qy + qs / 2 + 14), 7, (200, 40, 40))
+    centered(img, qy + qs / 2 - 9, 'DEMO', 15, 800, (255, 255, 255))
+    y = qy + qs + 14
+    centered(img, y, 'DEMO · NO PAGABLE', 12.5, 700, (200, 40, 40))
+    y += 22
+    centered(img, y, pg['expires'], 12.5, 500, MUTED)
+    y += 28
+    for ln in wrap(pg['help'], R - L - 36, 13.5):
+        draw_run(img, L + 18, y, ''.join(t for t, _ in ln).rstrip(), 13.5, 400, (55, 65, 81))
+        y += 19
+    y += 10
+    rr(d, (L + 15, y, R - 15, y + 38), 6, None, outline=BORDER, width=p(0.9))
+    centered(img, y + 10, pg['save'], 14, 600, PAY_BLUE)
+    box_bottom = y + 52
+    d.rounded_rectangle([p(L), p(206), p(R), p(box_bottom)], radius=p(9), outline=(229, 231, 235), width=p(0.9))
+    y = box_bottom + 14
+    for ln in wrap(pg['footer'], R - L, 11.5):
+        centered(img, y, ''.join(t for t, _ in ln).rstrip(), 11.5, 400, MUTED)
+        y += 16
+    safari_bar(img, pg['domain'])
     return img
 
 
@@ -844,8 +955,10 @@ def main():
             im = render_chat(sc, avatars)
         elif sc['type'] == 'chatlist':
             im = render_chatlist(sc, avatars)
+        elif sc['type'] == 'checkout':
+            im = render_checkout(sc, avatars)
         else:
-            im = render_page(sc, avatars)
+            im = render_codiqr(sc, avatars)
         plain = unicodedata.normalize('NFKD', sc['caption'].lower()).encode('ascii', 'ignore').decode()
         slug = re.sub(r'[^a-z0-9]+', '-', plain).strip('-')[:48]
         fn = out / f"{sc['id']}-{slug}.png"
@@ -854,7 +967,7 @@ def main():
         imgs.append(im)
         print('pantalla', fn.name, im.size)
     meta = spec['meta']
-    ov = sheet(spec['screens'], imgs, 4, meta['title'], 'Rafa (Taller de Rafa) con su agente y dos clientes: Ana y Luis. 16 pantallas en orden.', meta['disclaimer'], scale=0.5)
+    ov = sheet(spec['screens'], imgs, 6, meta['title'], f"Rafa (Taller de Rafa), el agente y dos clientes: Ana y Luis. {len(spec['screens'])} pantallas en orden.", meta['disclaimer'], scale=0.5)
     ov.save(out / 'overview.png', optimize=True)
     names.append(out / 'overview.png')
     print('overview', ov.size)
