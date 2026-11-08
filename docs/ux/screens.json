@@ -43,7 +43,7 @@
       "type": "chatlist",
       "clock": "10:06",
       "caption": "Lista de chats de Rafa",
-      "note": "«Agente de cobros» es el número del producto y solo se usa para el alta. «Mi agente (tú)» es el chat de Rafa consigo mismo, donde recibe propuestas y avisos. El agente solo lee ese chat y los de Ana y Luis.",
+      "note": "«Agente de cobros» es el número de WhatsApp del producto: ahí Rafa hace el alta, recibe propuestas, autoriza y recibe avisos. Ese número no puede leer los chats de Rafa; para eso Rafa vincula su WhatsApp, y el agente solo lee los chats de Ana y Luis.",
       "rows": [
         {
           "name": "Ana Torres",
@@ -73,16 +73,10 @@
           "ticks": "read"
         },
         {
-          "name": "Mi agente (tú)",
-          "avatar": "R",
-          "time": "jueves",
-          "preview": "🤖 Agente de cobros: Ya estoy vinculado a tu WhatsApp…"
-        },
-        {
           "name": "Agente de cobros",
           "avatar": "AC",
           "time": "jueves",
-          "preview": "✅ pey activó tu cuenta Taller de Rafa"
+          "preview": "Ya estoy vinculado a tu WhatsApp y leo solo los chats…"
         }
       ]
     },
@@ -134,7 +128,7 @@
       "type": "chat",
       "clock": "8:04",
       "caption": "Autoriza, vincula su WhatsApp y se activa",
-      "note": "Para leer los chats que Rafa elige, el servicio se vincula a su WhatsApp como dispositivo; el número del producto por sí solo no podría leerlos. La activación puede tardar hasta 5 días hábiles; aquí son 3 solo como ejemplo.",
+      "note": "Para leer los chats que Rafa elige, el servicio se vincula a su WhatsApp como dispositivo; el número del producto por sí solo no podría leerlos. El chat de Rafa con el número del producto queda excluido de esa lectura. La activación puede tardar hasta 5 días hábiles; aquí son 3 solo como ejemplo.",
       "header": {
         "name": "Agente de cobros",
         "avatar": "AC"
@@ -172,7 +166,7 @@
           "kind": "text",
           "dir": "in",
           "time": "8:02",
-          "text": "✅ pey activó tu cuenta *Taller de Rafa* (••••1234). Desde ahora las propuestas te llegan en tu chat «Mi agente (tú)»."
+          "text": "✅ pey activó tu cuenta *Taller de Rafa* (••••1234). Desde ahora te propongo cobros y te aviso de pagos aquí, en este chat."
         }
       ]
     },
@@ -229,12 +223,11 @@
       "chapter": 2,
       "type": "chat",
       "clock": "10:12",
-      "caption": "El agente propone el cobro en privado",
-      "note": "Se dispara porque hay un desglose con total y Ana aceptó; mencionar una pieza no basta. La propuesta queda fija internamente: Ana, estas partidas y $1,200.",
+      "caption": "El agente le propone el cobro a Rafa",
+      "note": "El agente leyó el chat con Ana desde el WhatsApp vinculado de Rafa y le escribe desde el número del producto. Se dispara porque hay desglose con total y Ana aceptó. La propuesta queda fija internamente: Ana, estas partidas y $1,200.",
       "header": {
-        "name": "Mi agente (tú)",
-        "subtitle": "Mensajes para ti",
-        "avatar": "R"
+        "name": "Agente de cobros",
+        "avatar": "AC"
       },
       "messages": [
         {
@@ -243,9 +236,9 @@
         },
         {
           "kind": "text",
-          "dir": "out",
+          "dir": "in",
           "time": "8:03",
-          "text": "🤖 *Agente de cobros*\nYa estoy vinculado a tu WhatsApp. Aquí, solo para ti, te propondré cobros y te avisaré de pagos."
+          "text": "Ya estoy vinculado a tu WhatsApp y leo solo los chats de Ana Torres y Luis Rivera. Por aquí te propondré cobros y te avisaré de pagos."
         },
         {
           "kind": "date",
@@ -253,9 +246,9 @@
         },
         {
           "kind": "text",
-          "dir": "out",
+          "dir": "in",
           "time": "10:12",
-          "text": "🤖 *Agente de cobros*\n*Ana Torres* aceptó tu presupuesto:\n• Balatas delanteras: $800.00\n• Mano de obra: $400.00\n*Total: $1,200.00 MXN*\n¿Le envío a Ana el cobro de $1,200 con este desglose?"
+          "text": "*Ana Torres* aceptó tu presupuesto:\n• Balatas delanteras: $800.00\n• Mano de obra: $400.00\n*Total: $1,200.00 MXN*\n¿Le envío a Ana el cobro de $1,200 con este desglose?"
         }
       ]
     },
@@ -265,18 +258,17 @@
       "type": "chat",
       "clock": "10:13",
       "caption": "Rafa responde «Sí»",
-      "note": "El «Sí» se liga a la única pregunta pendiente de este chat privado: Ana, $1,200 y este desglose. Autoriza un solo envío. Enviado todavía no significa pagado.",
+      "note": "El «Sí» llega de Rafa al número del producto y se liga a la única pregunta pendiente: Ana, $1,200 y este desglose. Autoriza un solo envío. Enviado todavía no significa pagado.",
       "header": {
-        "name": "Mi agente (tú)",
-        "subtitle": "Mensajes para ti",
-        "avatar": "R"
+        "name": "Agente de cobros",
+        "avatar": "AC"
       },
       "messages": [
         {
           "kind": "text",
-          "dir": "out",
+          "dir": "in",
           "time": "10:12",
-          "text": "🤖 *Agente de cobros*\n*Ana Torres* aceptó tu presupuesto:\n• Balatas delanteras: $800.00\n• Mano de obra: $400.00\n*Total: $1,200.00 MXN*\n¿Le envío a Ana el cobro de $1,200 con este desglose?"
+          "text": "*Ana Torres* aceptó tu presupuesto:\n• Balatas delanteras: $800.00\n• Mano de obra: $400.00\n*Total: $1,200.00 MXN*\n¿Le envío a Ana el cobro de $1,200 con este desglose?"
         },
         {
           "kind": "text",
@@ -286,9 +278,9 @@
         },
         {
           "kind": "text",
-          "dir": "out",
+          "dir": "in",
           "time": "10:13",
-          "text": "🤖 *Agente de cobros*\nListo ✅ Le envié a *Ana Torres* el cobro de *$1,200.00* con el desglose.\nAún no está pagado: te aviso cuando pey confirme el pago."
+          "text": "Listo ✅ Le envié a *Ana Torres* el cobro de *$1,200.00* con el desglose.\nAún no está pagado: te aviso cuando pey confirme el pago."
         }
       ]
     },
@@ -298,7 +290,7 @@
       "type": "chat",
       "clock": "10:14",
       "caption": "Ana recibe el enlace con el desglose",
-      "note": "Sale de la cuenta de Rafa e identifica que es un mensaje automático. El enlace lleva a una página propia planeada (cobro.example, ficticio) con un token opaco, no a un link hospedado de pey.",
+      "note": "El cobro autorizado sale del WhatsApp de Rafa (sesión vinculada) hacia el chat exacto de Ana, e indica que es un mensaje automático. El enlace lleva a una página propia planeada (cobro.example, ficticio) con un token opaco, no a un link hospedado de pey.",
       "header": {
         "name": "Ana Torres",
         "avatar": "AT"
@@ -434,24 +426,23 @@
       "type": "chat",
       "clock": "10:42",
       "caption": "Pago de Ana confirmado; propuesta para Luis",
-      "note": "Ana ya pagó por su cuenta, y lo confirmó pey. Para Luis, el agente muestra lo que entendió de la nota de voz para que Rafa lo revise antes de decir que sí.",
+      "note": "Las notificaciones de pago y las propuestas llegan del número del producto. Para Luis, el agente muestra lo que entendió de la nota de voz para que Rafa lo revise antes de decir que sí.",
       "header": {
-        "name": "Mi agente (tú)",
-        "subtitle": "Mensajes para ti",
-        "avatar": "R"
+        "name": "Agente de cobros",
+        "avatar": "AC"
       },
       "messages": [
         {
           "kind": "text",
-          "dir": "out",
+          "dir": "in",
           "time": "10:21",
-          "text": "🤖 *Agente de cobros*\n✅ *pey confirmó el pago*\nAna Torres · $1,200.00\nLlegó a tu cuenta ••••1234."
+          "text": "✅ *pey confirmó el pago*\nAna Torres · $1,200.00\nLlegó a tu cuenta ••••1234."
         },
         {
           "kind": "text",
-          "dir": "out",
+          "dir": "in",
           "time": "10:42",
-          "text": "🤖 *Agente de cobros*\n*Luis Rivera* aceptó lo de tu nota de voz:\n• Aceite sintético: $900.00\n• Filtro: $250.00\n• Mano de obra: $350.00\n*Total: $1,500.00 MXN*\n¿Le envío a Luis el cobro de $1,500?"
+          "text": "*Luis Rivera* aceptó lo de tu nota de voz:\n• Aceite sintético: $900.00\n• Filtro: $250.00\n• Mano de obra: $350.00\n*Total: $1,500.00 MXN*\n¿Le envío a Luis el cobro de $1,500?"
         }
       ]
     },
@@ -502,16 +493,15 @@
       "caption": "El agente actualiza el cobro; Rafa dice «Sí»",
       "note": "La corrección invalida la propuesta de $1,500 sin enviar nada. El nuevo «Sí» se liga a la pregunta vigente: Luis, $1,600.",
       "header": {
-        "name": "Mi agente (tú)",
-        "subtitle": "Mensajes para ti",
-        "avatar": "R"
+        "name": "Agente de cobros",
+        "avatar": "AC"
       },
       "messages": [
         {
           "kind": "text",
-          "dir": "out",
+          "dir": "in",
           "time": "10:45",
-          "text": "🤖 *Agente de cobros*\nActualicé el cobro de *Luis Rivera* a *$1,600.00*:\n• Aceite sintético: $1,000.00\n• Filtro: $250.00\n• Mano de obra: $350.00\nDescarté la cotización anterior de $1,500; no se envió nada.\n¿Se lo envío?"
+          "text": "Actualicé el cobro de *Luis Rivera* a *$1,600.00*:\n• Aceite sintético: $1,000.00\n• Filtro: $250.00\n• Mano de obra: $350.00\nDescarté la cotización anterior de $1,500; no se envió nada.\n¿Se lo envío?"
         },
         {
           "kind": "text",
@@ -521,9 +511,9 @@
         },
         {
           "kind": "text",
-          "dir": "out",
+          "dir": "in",
           "time": "10:46",
-          "text": "🤖 *Agente de cobros*\nListo ✅ Le envié a *Luis Rivera* el cobro de *$1,600.00*. Te aviso cuando pey confirme."
+          "text": "Listo ✅ Le envié a *Luis Rivera* el cobro de *$1,600.00*. Te aviso cuando pey confirme."
         }
       ]
     },
@@ -573,9 +563,8 @@
       "caption": "Comprobante recibido: queda como reportado",
       "note": "El agente registra el comprobante de Luis, pero no lo cuenta como pagado: el cobro sigue pendiente hasta que pey lo confirme.",
       "header": {
-        "name": "Mi agente (tú)",
-        "subtitle": "Mensajes para ti",
-        "avatar": "R"
+        "name": "Agente de cobros",
+        "avatar": "AC"
       },
       "messages": [
         {
@@ -586,15 +575,15 @@
         },
         {
           "kind": "text",
-          "dir": "out",
+          "dir": "in",
           "time": "10:46",
-          "text": "🤖 *Agente de cobros*\nListo ✅ Le envié a *Luis Rivera* el cobro de *$1,600.00*. Te aviso cuando pey confirme."
+          "text": "Listo ✅ Le envié a *Luis Rivera* el cobro de *$1,600.00*. Te aviso cuando pey confirme."
         },
         {
           "kind": "text",
-          "dir": "out",
+          "dir": "in",
           "time": "11:06",
-          "text": "🤖 *Agente de cobros*\n📎 Luis Rivera mandó un comprobante por $1,600.00.\nLo dejo como *reportado*: todavía no lo cuento como pagado. Te aviso cuando pey lo confirme."
+          "text": "📎 Luis Rivera mandó un comprobante por $1,600.00.\nLo dejo como *reportado*: todavía no lo cuento como pagado. Te aviso cuando pey lo confirme."
         }
       ]
     },
@@ -604,18 +593,17 @@
       "type": "chat",
       "clock": "11:31",
       "caption": "pey confirma a Luis; resumen del día",
-      "note": "La confirmación viene de pey, no de la foto. El resumen separa lo confirmado de lo descartado y cuadra: $1,200 + $1,600 = $2,800.",
+      "note": "La confirmación viene de pey, no de la foto. Rafa le pregunta al agente como a cualquier contacto. El resumen separa lo confirmado de lo descartado y cuadra: $1,200 + $1,600 = $2,800.",
       "header": {
-        "name": "Mi agente (tú)",
-        "subtitle": "Mensajes para ti",
-        "avatar": "R"
+        "name": "Agente de cobros",
+        "avatar": "AC"
       },
       "messages": [
         {
           "kind": "text",
-          "dir": "out",
+          "dir": "in",
           "time": "11:09",
-          "text": "🤖 *Agente de cobros*\n✅ *pey confirmó el pago*\nLuis Rivera · $1,600.00\nLlegó a tu cuenta ••••1234."
+          "text": "✅ *pey confirmó el pago*\nLuis Rivera · $1,600.00\nLlegó a tu cuenta ••••1234."
         },
         {
           "kind": "text",
@@ -625,9 +613,9 @@
         },
         {
           "kind": "text",
-          "dir": "out",
+          "dir": "in",
           "time": "11:30",
-          "text": "🤖 *Agente de cobros*\n*Cobros de hoy*\n✅ Ana Torres · $1,200.00\n✅ Luis Rivera · $1,600.00\nCotización anterior de Luis ($1,500): descartada, no se envió\n*Confirmado por pey: $2,800.00*\nPendiente por cobrar: $0.00"
+          "text": "*Cobros de hoy*\n✅ Ana Torres · $1,200.00\n✅ Luis Rivera · $1,600.00\nCotización anterior de Luis ($1,500): descartada, no se envió\n*Confirmado por pey: $2,800.00*\nPendiente por cobrar: $0.00"
         }
       ]
     },

@@ -7,19 +7,26 @@
 ## Cómo leerlo
 
 - **Perspectiva:** todo se ve desde el teléfono de **Rafa** (Taller de Rafa), salvo las pantallas 08 y 09, que muestran lo que ve Ana al abrir el enlace.
-- **Alta con el número del producto (02–03):** Rafa le escribe a «Agente de cobros», un número público de WhatsApp del producto. Ahí el agente aparece en blanco y Rafa en verde, como en cualquier chat. Ese número solo se usa para el alta: al final, Rafa vincula el servicio a su propio WhatsApp y elige qué chats lee.
-- **«Mi agente (tú)» (05, 06, 11, 13, 15, 16)** es el chat de Rafa consigo mismo, guardado con ese nombre. Ahí llegan las propuestas, las autorizaciones y los avisos. Como el agente opera desde la sesión vinculada de Rafa, sus mensajes y los de Rafa **aparecen en verde**; por eso cada mensaje del agente empieza con «🤖 Agente de cobros».
-- **En los chats con clientes**, todo lo que sale de la cuenta de Rafa es verde, lo escriba él o el agente. Lo que envía el agente empieza con «🤖 Cobro de Taller de Rafa».
-- **Permiso con un «Sí» natural:** el agente pregunta en privado, por ejemplo «¿Le envío a Ana el cobro de $1,200 con este desglose?», y Rafa contesta «Sí». No hay códigos que escribir ni respuestas citadas obligatorias. El backend liga ese «sí» a la única pregunta abierta de ese chat (cliente, partidas, monto y versión). Si hubiera dos preguntas abiertas, el agente preguntaría cuál antes de enviar. Lo que escriba un cliente nunca autoriza un envío.
+- **Rafa habla con «Agente de cobros»**, el número de WhatsApp del producto, en **todas** las interacciones con el agente: alta (02–03), propuestas (05, 11), autorizaciones (06, 13), avisos de comprobante y de pago (11, 15, 16) y consultas (16). Como en cualquier chat, el agente aparece en **blanco** y Rafa en **verde**. No hay chat de Rafa consigo mismo.
+- **El número del producto no lee los chats de Rafa.** Para detectar cobros, al final del alta Rafa vincula su WhatsApp como dispositivo y elige qué chats lee el agente (03). El chat de Rafa con «Agente de cobros» queda fuera de esa lectura.
+- **En los chats con clientes (04, 07, 10, 12, 14, 17)**, todo lo que sale de la cuenta de Rafa es verde, lo escriba él o el agente. El cobro autorizado sale del WhatsApp de Rafa hacia el chat exacto del cliente y empieza con «🤖 Cobro de Taller de Rafa» para que se note que es automático.
+- **Permiso con un «Sí» natural:** el agente pregunta, por ejemplo, «¿Le envío a Ana el cobro de $1,200 con este desglose?», y Rafa contesta «Sí». No hay códigos que escribir ni respuestas citadas obligatorias. El backend liga ese «sí» a la única pregunta abierta (cliente, partidas, monto y versión). Si hubiera dos preguntas abiertas, el agente preguntaría cuál antes de enviar. Lo que escriba un cliente nunca autoriza un envío.
 - **Una corrección invalida la propuesta anterior (12–13):** el agente descarta la cotización de $1,500 sin enviarla y vuelve a preguntar con el nuevo total.
 - **Enviado no es pagado** y **comprobante no es pago**. Solo un aviso de pey verificado se cuenta como pago confirmado.
+
+## Dos sesiones de WhatsApp
+
+| Sesión (demo: Baileys en el mismo proceso) | Qué hace en las pantallas |
+|---|---|
+| `PRODUCT`: número «Agente de cobros» | Conversa con Rafa: alta, preguntas, «Sí», avisos. Solo un mensaje entrante (`fromMe = false`) del número registrado de Rafa cuenta como comando |
+| `MERCHANT`: WhatsApp de Rafa vinculado | Lee los chats con Ana y Luis y envía los cobros aprobados. Nunca autoriza nada y descarta el chat con «Agente de cobros» |
 
 ## Capítulos
 
 | Capítulo | Pantallas | Qué muestra |
 |---|---|---|
-| [1 · Alta](mockups/storyboard-1.png) | 01–03 | Chats de Rafa, alta con el número del producto, «Sí, autorizo», vinculación y activación |
-| [2 · Ana](mockups/storyboard-2.png) | 04–09 | Desglose, pregunta privada, «Sí», enlace, checkout estilo pey y QR CoDi |
+| [1 · Alta](mockups/storyboard-1.png) | 01–03 | Chats de Rafa, alta con «Agente de cobros», «Sí, autorizo», vinculación del WhatsApp de Rafa y activación |
+| [2 · Ana](mockups/storyboard-2.png) | 04–09 | Desglose, pregunta del agente, «Sí», enlace desde el WhatsApp de Rafa, checkout estilo pey y QR CoDi |
 | [3 · Luis](mockups/storyboard-3.png) | 10–13 | Nota de voz, propuesta, corrección de precio, pregunta nueva y «Sí» |
 | [4 · Confirmaciones](mockups/storyboard-4.png) | 14–17 | Comprobante reportado, confirmación de pey, resumen del día y cierre de Rafa |
 
@@ -29,11 +36,11 @@ Montos que cuadran en todo el flujo: Ana $1,200 (800 + 400). Luis $1,600 (1,000 
 
 | # | Archivo | Qué pasa |
 |---|---|---|
-| 01 | [lista de chats](mockups/01-lista-de-chats-de-rafa.png) | «Agente de cobros» (alta) y «Mi agente (tú)» (operación diaria) |
+| 01 | [lista de chats](mockups/01-lista-de-chats-de-rafa.png) | «Agente de cobros» aparece como un contacto más de Rafa |
 | 02 | [alta: datos](mockups/02-alta-rafa-le-escribe-al-numero-del-producto.png) | Cuatro datos y una confirmación con la declaración de titularidad (CLABE enmascarada) |
 | 03 | [alta: autorización y activación](mockups/03-autoriza-vincula-su-whatsapp-y-se-activa.png) | «Sí, autorizo», vinculación y «puede tardar hasta 5 días hábiles» |
 | 04 | [Ana: desglose](mockups/04-rafa-le-da-el-desglose-a-ana.png) | Rafa cotiza como siempre y Ana acepta |
-| 05 | [propuesta](mockups/05-el-agente-propone-el-cobro-en-privado.png) | «¿Le envío a Ana el cobro de $1,200 con este desglose?» |
+| 05 | [propuesta del agente](mockups/05-el-agente-le-propone-el-cobro-a-rafa.png) | «¿Le envío a Ana el cobro de $1,200 con este desglose?» |
 | 06 | [«Sí»](mockups/06-rafa-responde-si.png) | Un «Sí» simple autoriza ese cobro; «aún no está pagado» |
 | 07 | [Ana recibe el enlace](mockups/07-ana-recibe-el-enlace-con-el-desglose.png) | Mensaje automático con desglose y enlace (token opaco en la URL) |
 | 08 | [checkout](mockups/08-ana-abre-el-enlace-checkout-con-estilo-pey.png) | Estilo del checkout de pey: total, productos, comisión ilustrativa de $0.00 y botón CoDi; tarjeta deshabilitada |
@@ -71,7 +78,7 @@ Rafa pidió mandar un **enlace** de pago. El link hospedado de pey (`POST /payme
 ```bash
 python3 -m venv /tmp/mockvenv && /tmp/mockvenv/bin/pip install pillow qrcode
 /tmp/mockvenv/bin/python docs/ux/render_mockups.py                 # PNG en docs/ux/mockups/
-/tmp/mockvenv/bin/python docs/ux/render_mockups.py --zip /tmp/pey-whatsapp-mockups.zip
+/tmp/mockvenv/bin/python docs/ux/render_mockups.py --zip /tmp/pey-whatsapp-mockups-v3-agente-numero-propio.zip
 ```
 
 - [`screens.json`](screens.json) es la única fuente del texto de cada pantalla y de sus pies de foto.

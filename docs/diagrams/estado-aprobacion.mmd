@@ -5,8 +5,8 @@ stateDiagram-v2
   Aclarando --> Detectado: el comerciante aclara en privado
   Detectado --> EsperandoCuenta: receptor aún no ACTIVE
   EsperandoCuenta --> Propuesto: receptor pasa a ACTIVE y sigue vigente
-  Detectado --> Propuesto: pregunta privada natural, snapshot con digest
-  Propuesto --> Aprobado: sí del dueño ligado a esta única pregunta abierta, digest igual, vigente
+  Detectado --> Propuesto: pregunta desde el número del producto, snapshot con digest
+  Propuesto --> Aprobado: sí de Rafa al número del producto, ligado a esta única pregunta abierta, digest igual, vigente
   Propuesto --> Rechazado: NO del comerciante
   Propuesto --> Expirado: vence la oferta local
   Propuesto --> Sustituido: cambia monto, partidas, cliente o receptor

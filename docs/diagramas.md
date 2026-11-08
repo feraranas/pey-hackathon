@@ -25,18 +25,21 @@ Fuente: [`arquitectura.mmd`](diagrams/arquitectura.mmd) · [SVG](diagrams/arquit
 
 ```mermaid
 flowchart TB
-  subgraph WA["WhatsApp (cuenta del comerciante)"]
-    C["Chat con cliente<br/>(seleccionado en allowlist)"]
-    S["Chat de control<br/>(chat consigo mismo)"]
+  subgraph WAM["WhatsApp de Rafa (sesión vinculada, solo lectura de chats elegidos)"]
+    C["Chat con cliente<br/>(allowlist)"]
   end
-  Cli(["Cliente"]) <-->|"mensajes, audios,<br/>QR + desglose"| C
+  subgraph WAP["Número del producto «Agente de cobros»"]
+    S["Chat Rafa ↔ Agente de cobros<br/>(canal de control)"]
+  end
+  Cli(["Cliente"]) <-->|"mensajes, audios,<br/>enlace + desglose"| C
   M(["Comerciante"]) <-->|"conversa y cobra"| C
-  M <-->|"SI CÓDIGO, onboarding,<br/>efectivo, consultas"| S
+  M <-->|"alta, «Sí», efectivo,<br/>consultas"| S
 
   subgraph APP["Servicio único Node.js + TypeScript (un proceso, un volumen)"]
-    BA["Adaptador WhatsApp<br/>Baileys: sesión cifrada, JID propio,<br/>cursor, IDs preasignados"]
+    BM["Sesión Baileys MERCHANT<br/>dispositivo vinculado de Rafa:<br/>lee allowlist, envía cobros autorizados;<br/>excluye el chat con el producto"]
+    BP["Sesión Baileys PRODUCT<br/>número del producto:<br/>comandos con fromMe=false y<br/>remitente = JID de Rafa"]
     EX["Extracción<br/>OpenAI: transcripción +<br/>salida estructurada Zod"]
-    CO["Coordinador<br/>único escritor del dominio:<br/>órdenes, intents, aprobación,<br/>saldo, outbox"]
+    CO["Coordinador<br/>único escritor del dominio:<br/>órdenes, intents, preguntas,<br/>aprobación, saldo, outbox"]
     PA["Adaptador pey<br/>REST + verificación<br/>Standard Webhooks"]
     HT["Fastify HTTPS<br/>POST /webhooks/pey"]
     DB[("SQLite WAL<br/>better-sqlite3")]
@@ -44,17 +47,19 @@ flowchart TB
     PG["Página de cobro opcional<br/>GET /c/token, solo lectura:<br/>desglose + QR de pey"]
   end
 
-  C -.->|"observación: contexto,<br/>nunca autoridad"| BA
-  S -->|"comando con identidad<br/>propia verificada"| BA
-  BA -->|"observación autenticada"| CO
+  C -.->|"observación: contexto,<br/>nunca autoridad"| BM
+  S -->|"mensaje entrante de Rafa"| BP
+  BM -->|"observación de cliente"| CO
+  BP -->|"comando autenticado"| CO
   CO -->|"texto o audio a hechos"| EX
   EX -->|"CandidateFacts<br/>sin capacidad de enviar"| CO
   CO <-->|"transacciones cortas,<br/>sin red dentro"| DB
   W -->|"reclama trabajo durable"| DB
   W -->|"crear QR / registrar CLABE /<br/>consultar estado"| PA
-  W -->|"prompt privado o QR al<br/>destinatario exacto"| BA
-  BA -->|"envío"| S
-  BA -->|"envío autorizado"| C
+  W -->|"pregunta, aviso"| BP
+  W -->|"cobro aprobado al<br/>destinatario exacto"| BM
+  BP -->|"envío al JID de Rafa"| S
+  BM -->|"envío autorizado"| C
   PA <-->|"HTTPS Bearer"| PEY[("API pey<br/>api.pey.mx")]
   PEY -->|"webhook firmado"| HT
   HT -->|"firma válida: guardar<br/>y luego 2xx"| DB
@@ -81,9 +86,9 @@ Fuente: [`flujo-e2e.mmd`](diagrams/flujo-e2e.mmd) · [SVG](diagrams/flujo-e2e.sv
 
 ```mermaid
 flowchart TD
-  A["Evento nuevo de Baileys"] --> B{"¿Chat en allowlist o chat<br/>de control, y evento no<br/>procesado antes del cursor?"}
+  A["Evento nuevo de Baileys"] --> B{"¿Sesión PRODUCT, o sesión MERCHANT<br/>en chat de la allowlist (nunca el chat<br/>con el producto), y evento nuevo?"}
   B -- No --> Z["Ignorar sin guardar contenido"]
-  B -- Sí --> C{"¿Chat de control, fromMe,<br/>JID propio y ID que no<br/>es eco del bot?"}
+  B -- Sí --> C{"¿Sesión PRODUCT, 1:1, fromMe=false,<br/>remitente = JID registrado de Rafa<br/>y ID que no es eco del bot?"}
   C -- "Sí: comando" --> J{"¿El sí se liga a una sola<br/>pregunta abierta y vigente?<br/>(estado, no el modelo)"}
   C -- "No: contexto de cliente<br/>o del comerciante" --> D["Extraer hechos con evidencia<br/>texto primero, audio opcional"]
   D --> E{"¿Trabajo y monto acordados<br/>sin ambigüedad?"}
@@ -91,7 +96,7 @@ flowchart TD
   E -- Sí --> G["Crear o versionar WorkOrder<br/>y ChargeIntent con monto fijo:<br/>anticipo, saldo o total"]
   G --> H{"¿Cuenta receptora propia<br/>en ACTIVE?"}
   H -- No --> H2["Avisar en privado: cuenta<br/>pendiente; no ofrecer cobro real"]
-  H -- Sí --> I["Pregunta privada natural:<br/>¿Le envío a Ana $1,200?"]
+  H -- Sí --> I["Pregunta desde el número del producto:<br/>¿Le envío a Ana $1,200?"]
   I --> J
   J -- "No: 0 o 2+ abiertas,<br/>sustituida o vencida" --> F
   J -- Sí --> K{"¿Mismo digest, vigente,<br/>cuenta ACTIVE del mismo<br/>comerciante?"}
@@ -102,7 +107,7 @@ flowchart TD
   O -- "201" --> R["Guardar IDC y qrString;<br/>encolar entrega al JID exacto"]
   O -- "4xx definitivo" --> Q["Fallo conocido: avisar;<br/>no enviar nada"]
   O -- "timeout / 5xx / crash" --> P["Creación incierta: sin qrString<br/>no hay nada que enviar;<br/>nuevo intento solo con nuevo sí"]
-  R --> S["Preasignar ID de mensaje, persistir,<br/>enviar imagen QR + desglose"]
+  R --> S["Sesión MERCHANT: preasignar ID,<br/>persistir, enviar enlace o QR +<br/>desglose al chat exacto del cliente"]
   S --> T{"¿Eco o ack con ese ID?"}
   T -- Sí --> U["Entregado; no significa pagado"]
   T -- "Incierto" --> P2["Entrega incierta: revisión;<br/>nunca reenviar a ciegas"]
@@ -113,7 +118,7 @@ flowchart TD
   WT --> WX{"¿IDC conocido, receptor,<br/>monto y estado coinciden?"}
   WX -- No --> WQ["Cuarentena o revisión;<br/>nunca marcar pagado"]
   WX -- Sí --> WP["Aplicar una vez por transactionId<br/>al ChargeIntent y al saldo de la orden"]
-  WP --> WN["Aviso privado: recibiste $X por<br/>este cobro; saldo verificado y efectivo<br/>registrado por separado"]
+  WP --> WN["Aviso desde el número del producto:<br/>recibiste $X por<br/>este cobro; saldo verificado y efectivo<br/>registrado por separado"]
   U -.-> WH
   P2 -.->|"el pago puede llegar igual"| WH
 ```
@@ -130,7 +135,7 @@ Fuente: [`estado-onboarding.mmd`](diagrams/estado-onboarding.mmd) · [SVG](diagr
 stateDiagram-v2
   direction TB
   [*] --> SinCuenta
-  SinCuenta --> CapturandoDatos: el comerciante inicia en el chat de control
+  SinCuenta --> CapturandoDatos: el comerciante escribe al número del producto
   CapturandoDatos --> ConfirmandoDatos: alias, nombre legal, CLABE de 18 dígitos y entity PERSON o BUSINESS
   ConfirmandoDatos --> CapturandoDatos: corrige un dato
   ConfirmandoDatos --> Registrando: consentimiento explícito versionado
@@ -176,8 +181,8 @@ stateDiagram-v2
   Aclarando --> Detectado: el comerciante aclara en privado
   Detectado --> EsperandoCuenta: receptor aún no ACTIVE
   EsperandoCuenta --> Propuesto: receptor pasa a ACTIVE y sigue vigente
-  Detectado --> Propuesto: pregunta privada natural, snapshot con digest
-  Propuesto --> Aprobado: sí del dueño ligado a esta única pregunta abierta, digest igual, vigente
+  Detectado --> Propuesto: pregunta desde el número del producto, snapshot con digest
+  Propuesto --> Aprobado: sí de Rafa al número del producto, ligado a esta única pregunta abierta, digest igual, vigente
   Propuesto --> Rechazado: NO del comerciante
   Propuesto --> Expirado: vence la oferta local
   Propuesto --> Sustituido: cambia monto, partidas, cliente o receptor

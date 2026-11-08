@@ -1,7 +1,7 @@
 stateDiagram-v2
   direction TB
   [*] --> SinCuenta
-  SinCuenta --> CapturandoDatos: el comerciante inicia en el chat de control
+  SinCuenta --> CapturandoDatos: el comerciante escribe al número del producto
   CapturandoDatos --> ConfirmandoDatos: alias, nombre legal, CLABE de 18 dígitos y entity PERSON o BUSINESS
   ConfirmandoDatos --> CapturandoDatos: corrige un dato
   ConfirmandoDatos --> Registrando: consentimiento explícito versionado

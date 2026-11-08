@@ -112,7 +112,8 @@ Verificado leyendo el paquete npm `baileys@7.0.0-rc14` (también publicado como 
 
 - `sendMessage(jid, content, options)` acepta `options.messageId`. En el código, las opciones del llamador se aplican después del ID generado, y `generateMessageIDV2` se exporta. Por eso el diseño **preasigna y persiste** el ID antes de enviar, para distinguir ecos del bot sin carreras. Esto se comprobó en el código fuente, no en documentación estable: el adaptador debe probarlo al arrancar y, si falla, deshabilitar comandos (supresión conservadora).
 - Baileys no es una API oficial de WhatsApp. La sesión puede cerrarse y el servicio puede imponer restricciones. La sesión se trata como secreto: cifrada en reposo, fuera del repositorio y de los logs.
-- Pendiente de comprobar en la sesión real: el formato del JID propio (número y LID en la v7), cómo aparecen los mensajes del chat consigo mismo y la cita (`contextInfo.stanzaId`) cuando el comerciante decide citar una propuesta (opcional: un «sí» simple basta).
+- Se usan **dos sesiones** en el mismo proceso: `PRODUCT` (el número del producto, canal con el comerciante) y `MERCHANT` (el WhatsApp del comerciante vinculado como dispositivo). Un número propio no puede leer los chats de otra cuenta; por eso la detección depende de la sesión `MERCHANT`.
+- Pendiente de comprobar en la sesión real: el formato de los JID (número y LID en la v7) en ambas sesiones, que el remitente de los mensajes entrantes en `PRODUCT` coincida con el JID propio de la sesión `MERCHANT` del mismo comerciante, y la cita (`contextInfo.stanzaId`) cuando el comerciante decide citar una propuesta (opcional: un «sí» simple basta).
 
 ## OpenAI
 

@@ -12,17 +12,19 @@ Mecánicos, hojalateros, plomeros, electricistas y otros oficios cobran por What
 
 ## La propuesta
 
+El comerciante habla con el agente en un chat con el número de WhatsApp del producto, «Agente de cobros», como con cualquier contacto. Sus clientes siguen hablando con él.
+
 1. **Alta por WhatsApp:** el comerciante le escribe al número público del producto, da alias, nombre legal, CLABE y tipo de persona, y responde «Sí, autorizo». El agente la registra en pey y avisa que la activación puede tardar hasta cinco días hábiles.
-2. **Detección:** en los chats elegidos, el agente identifica cuándo hay un trabajo y un monto acordados (texto primero; notas de voz opcionales).
-3. **Autorización:** pregunta privada en el chat del comerciante consigo mismo, por ejemplo "¿Le envío a Ana el anticipo de $600?". Un **«Sí»** simple autoriza **un** cobro: el modelo entiende el lenguaje, pero el cliente, el monto y la versión salen del estado guardado. Si hay dos preguntas abiertas, el agente pregunta cuál.
-4. **Cobro:** QR CoDi de monto fijo hacia la CLABE del comerciante, enviado con su desglose al cliente exacto.
-5. **Confirmación:** un webhook firmado de pey, verificado contra la API, genera el aviso "Recibiste $600 (verificado por pey)" con el saldo de la orden.
+2. **Detección:** el comerciante vincula su WhatsApp como dispositivo; en los chats elegidos, el agente identifica cuándo hay un trabajo y un monto acordados (texto primero; notas de voz opcionales).
+3. **Autorización:** el agente le pregunta desde el número del producto, por ejemplo "¿Le envío a Ana el anticipo de $600?". Un **«Sí»** simple autoriza **un** cobro: el modelo entiende el lenguaje, pero el cliente, el monto y la versión salen del estado guardado. Si hay dos preguntas abiertas, el agente pregunta cuál.
+4. **Cobro:** QR CoDi de monto fijo hacia la CLABE del comerciante, enviado desde el WhatsApp del comerciante, con su desglose, al cliente exacto.
+5. **Confirmación:** un webhook firmado de pey, verificado contra la API, genera el aviso "Recibiste $600 (verificado por pey)", también desde el número del producto, con el saldo de la orden.
 
 Una captura del cliente cuenta como *reportado, pendiente de verificar*, y el efectivo como *registrado por ti*. Solo pey confirma un pago.
 
 ## Cómo se ve
 
-![Rafa responde «Sí» a la propuesta de cobro en su chat privado](docs/ux/mockups/06-rafa-responde-si.png)
+![Rafa responde «Sí» al Agente de cobros](docs/ux/mockups/06-rafa-responde-si.png)
 
 Ver el [flujo completo en pantallas](docs/ux/README.md) (maquetas ilustrativas con datos ficticios).
 
@@ -43,7 +45,7 @@ Node.js 24 LTS + TypeScript · Fastify · Baileys 7 · SQLite (WAL, `better-sqli
 
 ## Alcance
 
-**Incluye:** onboarding de la CLABE, órdenes con anticipo y saldo, QR CoDi, verificación de pagos, efectivo registrado y comprobantes reportados, para una sola sesión de WhatsApp.
+**Incluye:** onboarding de la CLABE, órdenes con anticipo y saldo, QR CoDi, verificación de pagos, efectivo registrado y comprobantes reportados. Dos sesiones de WhatsApp en el mismo proceso: el número del producto, donde el comerciante habla con el agente, y el WhatsApp vinculado del comerciante, que lee a sus clientes y envía los cobros.
 
 **No incluye:** ERP, inventario, facturación, diagnóstico, aprobación extra del cliente, links hospedados (sin `bankAccountId`), multi-sesión SaaS ni MCP de toda la API.
 

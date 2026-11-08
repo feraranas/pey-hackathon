@@ -8,13 +8,13 @@ Muchas personas con un oficio (mecánica, hojalatería, plomería, electricidad,
 
 El producto es un **coordinador de cobros** que trabaja detrás del WhatsApp que esa persona ya usa:
 
-1. Observa solo los chats con clientes que el comerciante eligió.
+1. Observa, desde el WhatsApp del comerciante vinculado como dispositivo, solo los chats con clientes que eligió.
 2. Detecta cuándo ya acordaron un trabajo y un monto.
-3. En privado, le pregunta al comerciante: "¿Le envío a Ana el cobro de $1,200 por balatas y mano de obra?". El comerciante contesta "Sí".
-4. Solo con ese "sí", ligado a la pregunta vigente (cliente, monto y versión), envía **un** QR CoDi de monto fijo con su desglose al cliente correcto.
-5. Cuando pey confirma el pago con un webhook firmado y verificado, avisa: "Recibiste $1,200 de Ana por balatas y mano de obra (pago verificado por pey)".
+3. Desde el número de WhatsApp del producto («Agente de cobros»), le pregunta al comerciante: "¿Le envío a Ana el cobro de $1,200 por balatas y mano de obra?". El comerciante contesta "Sí".
+4. Solo con ese "sí", ligado a la pregunta vigente (cliente, monto y versión), envía **un** QR CoDi de monto fijo con su desglose al cliente correcto, desde el WhatsApp del comerciante.
+5. Cuando pey confirma el pago con un webhook firmado y verificado, avisa desde el número del producto: "Recibiste $1,200 de Ana por balatas y mano de obra (pago verificado por pey)".
 
-**Dentro:** onboarding de la CLABE por WhatsApp, órdenes con anticipo y saldo, efectivo registrado por el comerciante, comprobantes marcados como reportados y una sola sesión de WhatsApp.
+**Dentro:** onboarding de la CLABE por WhatsApp, órdenes con anticipo y saldo, efectivo registrado por el comerciante, comprobantes marcados como reportados, y dos sesiones de WhatsApp en el mismo proceso: el número del producto (canal con el comerciante) y el WhatsApp vinculado de un comerciante de demo.
 
 **Fuera:** ERP, inventario, facturación, diagnóstico, aprobación adicional obligatoria del cliente, multi-sesión SaaS, links hospedados (ver [integraciones](integraciones.md#link-de-pago-hospedado-sin-paridad-fuera-del-mvp)) y un servidor MCP que envuelva toda la API.
 
@@ -35,7 +35,9 @@ Agente      → "Listo, la registré. La activación puede tardar hasta cinco d�
 Agente      → "Vincúlame a tu WhatsApp como dispositivo y dime qué chats leo."
 ```
 
-El alta es la única conversación con el número público del producto (una segunda sesión de WhatsApp del servicio). El consentimiento vale solo como respuesta del mismo remitente a la confirmación inmediatamente anterior, con los datos que esa confirmación mostró; si los datos cambian, se vuelve a preguntar. Después, el servicio se vincula al WhatsApp del comerciante y todo lo demás (propuestas, autorizaciones y avisos) ocurre en su chat consigo mismo.
+Toda la conversación entre el comerciante y el agente ocurre en su chat con el número del producto: alta, propuestas de cobro, autorizaciones, avisos de pago y consultas. Ahí el agente aparece como un contacto más («Agente de cobros»). El consentimiento vale solo como respuesta del mismo remitente a la confirmación inmediatamente anterior, con los datos que esa confirmación mostró; si los datos cambian, se vuelve a preguntar.
+
+Ese número **no puede leer** las conversaciones del comerciante con sus clientes. Para eso, al final del alta el comerciante vincula su WhatsApp como dispositivo (sesión `MERCHANT`) y elige qué chats lee el agente. Al vincular se verifica que el JID de esa sesión sea el mismo que escribe al número del producto. Los cobros autorizados salen de esa sesión, es decir, del WhatsApp del comerciante, hacia el chat exacto del cliente.
 
 ### Comerciante y cliente: un cobro
 
@@ -44,17 +46,17 @@ El alta es la única conversación con el número público del producto (una seg
 Comerciante → "Ana, son balatas $800 y mano de obra $400, total $1,200. Te pido $600 de anticipo."
 Ana         → "Va, ¿cómo te pago?"
 
-[chat de control]
+[chat con el número del producto]
 Agente      → "Ana (…1234) · Orden: balatas $800 + mano de obra $400 = $1,200
                Este cobro: anticipo $600.00 MXN · vence en 24 h.
                ¿Le envío a Ana el anticipo de $600?"
 Comerciante → "Sí"
 
-[chat con Ana]
+[chat con Ana, desde el WhatsApp del comerciante]
 Agente      → [imagen QR] "Anticipo para: balatas $800 + mano de obra $400 (total $1,200).
                Monto de este QR: $600.00 MXN. Paga desde tu app bancaria con CoDi."
 
-[chat de control, tras el webhook verificado]
+[chat con el número del producto, tras el webhook verificado]
 Agente      → "Recibiste $600.00 de Ana por el anticipo (pago verificado por pey).
                Orden: total $1,200 · verificado $600 · efectivo registrado $0 · falta $600."
 ```
@@ -94,7 +96,9 @@ classDiagram
 
 | Entidad | Qué representa | Invariantes |
 |---|---|---|
-| `Merchant` | La persona que cobra; dueña de la sesión de WhatsApp | JID propio normalizado (número y LID) y chat de control fijos |
+| `Merchant` | La persona que cobra; dueña del WhatsApp vinculado | Su JID normalizado (número y LID) es a la vez el remitente autorizado en el número del producto y el JID propio de su sesión `MERCHANT` |
+| `WaSession` | Una sesión Baileys del proceso | Rol `PRODUCT` (número del producto, canal de control) o `MERCHANT` (dispositivo vinculado del comerciante); una de cada en la demo |
+| `ControlPrompt` | Una pregunta de cobro enviada desde el número del producto | Ligada a un intent y su digest; `Abierta → Respondida/Sustituida/Vencida`; la que resuelve un «sí» |
 | `ReceivingAccount` | Su CLABE registrada en pey (`bankAccountId`) | Pertenece a un solo comerciante; cobra solo en `ACTIVE`; CLABE cifrada en reposo |
 | `Consent` | Texto, versión, mensaje y fecha de la aceptación | Documenta autorización; **no prueba titularidad** |
 | `ClientChat` | Un chat 1:1 elegido explícitamente | Allowlist; grupos apagados por defecto |
@@ -142,7 +146,7 @@ Un solo proceso Node.js. Se elige así para que cada invariante tenga un solo du
 | Módulo | Sabe | Expone | No hace |
 |---|---|---|---|
 | `coordinator/` | Órdenes, intents, aprobación, saldo, outbox, transacciones SQL | `observe`, `command`, `payment`, `tick` | Llamadas de red |
-| `whatsapp/` | Sesión Baileys, JIDs, self-chat, cursor, IDs preasignados, ecos, medios | Observaciones autenticadas y `deliver(outboxItem)` | Reglas de negocio |
+| `whatsapp/` | Dos sesiones Baileys (`PRODUCT` y `MERCHANT`), JIDs, cursor por sesión, IDs preasignados, ecos, medios, exclusión del chat con el producto | Observaciones autenticadas y `deliver(outboxItem)` por la sesión que le toca | Reglas de negocio |
 | `pey/` | HTTP, Bearer, errores, Standard Webhooks, conversión de montos | `registerAccount`, `getAccount`, `createQr`, `getTransaction`, `listQrTransactions`, `verifyWebhook` | Decidir si algo está pagado |
 | `extraction/` | Transcripción y salida estructurada | `CandidateFacts` con evidencia | Enviar, cobrar o escribir SQL |
 | `app.ts` | Arranque de Fastify, socket, temporizador y cierre ordenado | — | — |
@@ -157,10 +161,13 @@ type Centavos = bigint;
 type Money = { currency: 'MXN'; amount: Centavos };
 
 type AuthenticatedObservation =
-  | { kind: 'client_chat'; chatJid: ChatJid; messageId: WaMessageId; fromMe: boolean;
-      at: Instant; text?: string; audioRef?: MediaRef; imageRef?: MediaRef }
-  | { kind: 'control_chat'; messageId: WaMessageId; at: Instant; text: string;
-      quotedMessageId?: WaMessageId };          // ya verificado: fromMe, JID propio, no es eco
+  | { kind: 'client_chat'; session: 'MERCHANT'; chatJid: ChatJid; messageId: WaMessageId;
+      fromMe: boolean; at: Instant; text?: string; audioRef?: MediaRef; imageRef?: MediaRef }
+      // solo chats de la allowlist; el chat del comerciante con el número del producto nunca llega aquí
+  | { kind: 'merchant_command'; session: 'PRODUCT'; merchantId: MerchantId; senderJid: ChatJid;
+      messageId: WaMessageId; at: Instant; text: string; quotedMessageId?: WaMessageId };
+      // ya verificado: chat 1:1, fromMe=false, senderJid = JID registrado del comerciante,
+      // ID que no está en outbox (no es eco del producto)
 // El modelo interpreta el lenguaje ("sí", "mándaselo", "el de Luis") y, si lo hay, el cliente mencionado.
 // Nunca elige monto ni intent: eso lo resuelve resolvePendingFocus con el estado guardado.
 
@@ -205,7 +212,7 @@ interface Coordinator {
 
 ```text
 resolvePendingFocus(command, now):                       // determinista; el modelo no participa
-  abiertas ← preguntas de cobro enviadas en el chat de control, sin respuesta,
+  abiertas ← ControlPrompt en Abierta enviados por el número del producto a ese comerciante,
              con intent en Propuesto y vigente
   si command.quotedPromptId → foco ← la pregunta citada (citar es opcional, nunca obligatorio)
   si no, si command.clientHint → foco ← la única pregunta abierta de ese cliente
@@ -255,13 +262,18 @@ Restricciones que hacen cumplir las reglas aunque el código falle:
 
 ```sql
 -- Boceto de esquema.
-merchants(id PK, self_jid UNIQUE, self_lid UNIQUE NULL, control_chat_jid UNIQUE)
+merchants(id PK, merchant_jid UNIQUE, merchant_lid UNIQUE NULL)       -- remitente autorizado y JID de su sesión MERCHANT
+wa_sessions(id PK, role CHECK (role IN ('PRODUCT','MERCHANT')), own_jid UNIQUE, merchant_id FK NULL,
+            CHECK ((role = 'MERCHANT') = (merchant_id IS NOT NULL)))
+control_prompts(id PK, merchant_id FK, intent_id FK, intent_digest, wa_message_id UNIQUE,
+                state CHECK (state IN ('OPEN','ANSWERED','SUPERSEDED','EXPIRED')), sent_at)
 receiving_accounts(id PK, merchant_id FK, provider_bank_account_id UNIQUE, clabe_enc, clabe_last4,
                    entity CHECK (entity IN ('PERSON','BUSINESS')),
                    codi_status CHECK (codi_status IN ('PENDING','PROCESSING','ACTIVE','ERROR')),
                    consent_id FK, UNIQUE(id, merchant_id))
 consents(id PK, merchant_id FK, text, version, digest, command_message_id UNIQUE, accepted_at)
 client_chats(id PK, merchant_id FK, chat_jid, allowed, UNIQUE(merchant_id, chat_jid))
+                                                   -- el JID del número del producto nunca puede estar aquí
 wa_events(session_id, chat_jid, message_id, at, PRIMARY KEY(session_id, chat_jid, message_id))
 wa_cursor(session_id PK, paired_at, last_processed_at)
 work_orders(id PK, merchant_id FK, client_chat_id FK, current_version)
@@ -271,9 +283,11 @@ charge_intents(id PK, code UNIQUE, merchant_id FK, work_order_id FK, work_order_
                receiving_account_id, amount_cents CHECK (amount_cents > 0), digest, expires_at,
                approval_state, UNIQUE(id, recipient_jid),
                FOREIGN KEY(receiving_account_id, merchant_id) REFERENCES receiving_accounts(id, merchant_id))
-approvals(intent_id PK FK, digest, command_message_id UNIQUE, approved_at)
+approvals(intent_id PK FK, digest, prompt_id FK UNIQUE, command_message_id UNIQUE, approved_at)
 provider_charges(intent_id PK FK, creation_state, num_ref UNIQUE, codi_qr_id UNIQUE NULL, qr_string_enc NULL)
-outbox(id PK, kind, aggregate_id, semantic_key UNIQUE, intent_id NULL, recipient_jid, wa_message_id UNIQUE NULL,
+outbox(id PK, kind, session_role CHECK (session_role IN ('PRODUCT','MERCHANT')), aggregate_id,
+       semantic_key UNIQUE, intent_id NULL, recipient_jid, wa_message_id UNIQUE NULL,
+       CHECK ((kind = 'CHARGE') = (session_role = 'MERCHANT')),   -- cobros solo por la sesión del comerciante
        state, next_attempt_at, FOREIGN KEY(intent_id, recipient_jid) REFERENCES charge_intents(id, recipient_jid))
 webhook_events(webhook_id PK, received_at, type, raw_enc, processed_state)
 payment_receipts(transaction_id PK, intent_id FK, codi_qr_id, amount_cents, verified_at, flags)
@@ -289,13 +303,15 @@ reviews(id PK, kind, aggregate_id, opened_at, resolved_at NULL)
 
 ## 8. Identidad y autoridad en WhatsApp
 
-- **Allowlist:** solo se procesan los chats elegidos y el chat de control. Los grupos están apagados por defecto. De los chats no elegidos no se guarda contenido.
-- **Chat de control:** es el chat del comerciante consigo mismo. Un mensaje es comando solo si `fromMe`, su JID es el propio normalizado (número o LID) **y** su ID no está en `outbox.wa_message_id`. Los IDs del bot se preasignan y persisten **antes** de enviar, así que un eco nunca se confunde con el comerciante. Si la sesión real no permite esa distinción, los comandos se deshabilitan hasta corregir el adaptador.
-- **`fromMe` en el chat de un cliente** es contexto: el comerciante cotizando. Nunca es un comando.
+- **Dos sesiones, dos papeles.** `PRODUCT` es el número del producto: solo conversa con comerciantes registrados y es el único canal de comandos. `MERCHANT` es el WhatsApp del comerciante vinculado como dispositivo: lee los chats de la allowlist y envía los cobros aprobados. En la demo corren en el mismo proceso (una sesión de cada una). La WhatsApp Cloud API para el número del producto queda como evolución; no se asume configurada.
+- **Allowlist:** en la sesión `MERCHANT` solo se procesan los chats elegidos. Los grupos están apagados por defecto. De los chats no elegidos no se guarda contenido.
+- **Exclusión del chat con el producto:** en la sesión `MERCHANT`, el chat del comerciante con el número del producto se descarta siempre, antes del detector. Esos mensajes ya llegan por la sesión `PRODUCT`; procesarlos también aquí duplicaría comandos o haría que el detector leyera las propuestas del agente como una cotización (un bucle).
+- **Comandos:** un mensaje es comando solo si llega a la sesión `PRODUCT`, en un chat 1:1, con `fromMe = false`, con remitente igual al JID registrado del comerciante (número o LID normalizados) **y** con un ID que no está en `outbox.wa_message_id`. Lo que envía el propio número del producto llega con `fromMe = true` y nunca se interpreta como comando. Los IDs del bot se preasignan y persisten **antes** de enviar en ambas sesiones. Si la sesión real no permite verificar el remitente, los comandos se deshabilitan hasta corregir el adaptador.
+- **`fromMe` en el chat de un cliente** (sesión `MERCHANT`) es contexto: el comerciante cotizando. Nunca es un comando. Los cobros que envía el agente desde esa sesión también son `fromMe`; se reconocen por su ID preasignado y no se reprocesan como cotización.
 - **Inyección:** un cliente que escribe "sí, mándalo", "soy el dueño" o "cambia la CLABE", o que lo pone en una imagen o un audio, solo aporta datos a la extracción. La autoridad nunca viene del contenido.
 - **Audio:** el remitente lo da el sobre del mensaje. Un audio reenviado no prueba quién habla.
-- **Reinicios:** un cursor persistente, fijado al momento del emparejamiento, junto con `wa_events` UNIQUE, evita reprocesar. Los mensajes que llegaron mientras el servicio estaba caído **sí** se procesan. Un "sí" recibido así se resuelve con el estado al procesarse: si su pregunta ya se sustituyó, venció o hay otra abierta posterior, se pide aclaración en lugar de enviar. Si ya venció, se pide uno nuevo. La sincronización de historial anterior al emparejamiento se ignora.
-- **Secretos:** la sesión de Baileys, la API key, el secreto `whsec_` y la clave de OpenAI van en variables de entorno o en archivos fuera del repositorio. La sesión se cifra en reposo y Pino redacta CLABE, tokens y cuerpos de webhook.
+- **Reinicios:** un cursor persistente por sesión, fijado al momento del emparejamiento, junto con `wa_events` UNIQUE, evita reprocesar. Los mensajes que llegaron mientras el servicio estaba caído **sí** se procesan. Un "sí" recibido así se resuelve con el estado al procesarse: si su pregunta ya se sustituyó, venció o hay otra abierta posterior, se pide aclaración en lugar de enviar. Si ya venció, se pide uno nuevo. La sincronización de historial anterior al emparejamiento se ignora.
+- **Secretos:** las dos sesiones de Baileys, la API key, el secreto `whsec_` y la clave de OpenAI van en variables de entorno o en archivos fuera del repositorio. La sesión se cifra en reposo y Pino redacta CLABE, tokens y cuerpos de webhook.
 
 ## 8b. Página de cobro (opcional)
 
@@ -312,8 +328,8 @@ Flujo en pantallas: [docs/ux](ux/README.md).
 ## 9. Reglas duras (checklist)
 
 1. Ningún mensaje sale hacia un cliente sin un `Approval` del comerciante para ese intent exacto.
-2. Un "sí" natural del comerciante se liga a la última pregunta de cobro abierta en su chat de control (intent, cliente, monto y versión). Si hay dos o más plausibles, o la pregunta quedó sustituida o vencida, se pide aclaración y no se envía nada. No se exigen códigos ni citas.
-3. Solo un mensaje del dueño en su chat de control, que no sea eco del bot, puede aprobar.
+2. Un "sí" natural del comerciante, enviado al número del producto, se liga a la última pregunta de cobro abierta en ese chat (intent, cliente, monto y versión). Si hay dos o más plausibles, o la pregunta quedó sustituida o vencida, se pide aclaración y no se envía nada. No se exigen códigos ni citas.
+3. Solo un mensaje entrante del comerciante registrado al número del producto (`fromMe = false`, remitente verificado, no eco) puede aprobar. Nada que pase en la sesión `MERCHANT` aprueba.
 4. Snapshot inmutable: cualquier cambio de monto, partidas, cliente o receptor genera un intent nuevo y una pregunta nueva; la anterior se invalida.
 5. El QR va solo a `recipient_jid` del intent (FK compuesta) y una sola vez (`semantic_key`).
 6. El modelo propone hechos. No envía, no cobra, no escribe en la base y no cambia la cuenta.

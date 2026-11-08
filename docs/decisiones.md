@@ -17,7 +17,7 @@ Este documento resume las alternativas que se compararon y por qué se eligió c
 | Superficie de fallas nuevas | Menor | Más estados entre procesos |
 | Latencia de la IA | No bloquea: una llamada HTTP asíncrona no detiene el event loop de Node | Mismo comportamiento; **no** es una razón para separar |
 
-Para una demo de una sola sesión, el beneficio principal de separar (redesplegar sin reconectar) no compensa el trabajo extra. Los módulos se separan igual (`whatsapp/`, `pey/`, `coordinator/`), y la outbox y los trabajos ya son durables en tablas. Si el producto pasa a varias sesiones o workers, el siguiente paso natural es esa división con PostgreSQL.
+Para una demo con dos sesiones de WhatsApp en el mismo proceso (número del producto y comerciante vinculado), el beneficio principal de separar (redesplegar sin reconectar) no compensa el trabajo extra. Los módulos se separan igual (`whatsapp/`, `pey/`, `coordinator/`), y la outbox y los trabajos ya son durables en tablas. Si el producto pasa a varias sesiones o workers, el siguiente paso natural es esa división con PostgreSQL.
 
 Se descartaron Redis, colas externas, microservicios y serverless: el socket de WhatsApp necesita un proceso vivo, y más infraestructura no reduce la complejidad del problema real (autorización y dinero).
 
@@ -34,7 +34,7 @@ Un agente que lee chats y opera el portal parece simple, pero dejaría las regla
 Primero se diseñó con un código por cobro («SI A7K2») o una respuesta citada obligatoria. Es inequívoco, pero se siente como un ritual y no es como habla un comerciante. Se eligió un «sí» natural a la última pregunta:
 
 - **El modelo entiende el lenguaje:** si el mensaje es un sí o un no, y si menciona a un cliente («mándaselo a Luis»).
-- **El estado decide a qué se liga:** la pregunta de cobro abierta en el chat de control, con su intent inmutable (cliente, partidas, monto, versión y digest). El modelo nunca elige monto ni destinatario.
+- **El estado decide a qué se liga:** la pregunta de cobro abierta en el chat con el número del producto, con su intent inmutable (cliente, partidas, monto, versión y digest). El modelo nunca elige monto ni destinatario.
 - **Si hay duda, se pregunta:** con dos preguntas abiertas plausibles, o si la pregunta se sustituyó o venció, el agente pide una aclaración breve («¿Cuál envío: Ana $1,200 o Luis $1,600?»). Citar el mensaje sigue funcionando, pero es opcional.
 - **Un sí autoriza un solo cobro.** El «sí» de un cliente, un eco del bot o una respuesta a una propuesta vieja nunca autoriza.
 
@@ -58,7 +58,7 @@ Las APIs externas no ofrecen exactly-once, y pey no documenta clave de idempoten
 
 ## 8. Eco del bot: ID preasignado
 
-Se evaluó registrar los mensajes del bot *después* de enviarlos, pero eso deja una ventana en la que el eco puede confundirse con el comerciante. También se evaluó buscar en el historial tras una caída, que no es confiable. En Baileys 7 RC se verificó en el código que `sendMessage` acepta `messageId`, así que el ID se genera y persiste antes de enviar. Si en la sesión real no funciona, los comandos se deshabilitan.
+Se evaluó registrar los mensajes del bot *después* de enviarlos, pero eso deja una ventana en la que el eco puede confundirse con el comerciante. También se evaluó buscar en el historial tras una caída, que no es confiable. En Baileys 7 RC se verificó en el código que `sendMessage` acepta `messageId`, así que el ID se genera y persiste antes de enviar. Aplica a las dos sesiones: en `MERCHANT` evita que un cobro enviado por el agente se lea como cotización del comerciante, y en `PRODUCT` evita que un eco del número del producto se tome como comando. Si en la sesión real no funciona, los comandos se deshabilitan.
 
 ## 9. QR primero; link hospedado fuera
 
@@ -71,3 +71,19 @@ La documentación vigente recomienda probar en producción con centavos y anunci
 ## 11. Permiso de plataforma
 
 El equipo confirmó que puede registrar CLABEs de distintos comercios bajo su API key. Los términos se citan en [integraciones](integraciones.md#términos-del-api-de-pey) solo como referencia, sin convertirlos en un bloqueo. El consentimiento guardado documenta la autorización del comerciante; no se presenta como prueba de titularidad.
+
+## 11. Canal con el comerciante: número propio del producto
+
+Toda la conversación entre comerciante y agente (alta, propuestas, autorizaciones, avisos y consultas) ocurre en un chat con un número de WhatsApp del producto, «Agente de cobros». El comerciante escribe en verde y el agente responde en blanco, como cualquier contacto.
+
+**Alternativa descartada: el chat del comerciante consigo mismo.** Una versión anterior del diseño usaba ese chat como canal de control (comando = `fromMe` + JID propio + no eco). Evitaba un segundo número, pero era confusa: los mensajes del agente y los del comerciante salían de la misma cuenta, ambos en verde, y había que marcarlos con «🤖». Además mezclaba la autoridad con la sesión que lee a los clientes.
+
+**Lo que el número propio no resuelve:** no puede leer las conversaciones del comerciante con sus clientes. La detección proactiva sigue necesitando el WhatsApp del comerciante vinculado vía Baileys. Por eso hay dos sesiones con papeles separados:
+
+| Sesión | Qué es | Lee | Envía | ¿Puede autorizar? |
+|---|---|---|---|---|
+| `PRODUCT` | Número del producto (demo: Baileys) | Mensajes del comerciante registrado | Preguntas, avisos, respuestas | Sí: solo mensajes entrantes `fromMe = false` del JID registrado |
+| `MERCHANT` | WhatsApp del comerciante vinculado como dispositivo | Chats de la allowlist; nunca el chat con el producto | Cobros aprobados al chat exacto del cliente | No |
+
+Para la demo se usan dos sesiones Baileys en el mismo proceso, porque no se asume una cuenta de WhatsApp Cloud API ya configurada. La Cloud API sería el reemplazo natural de la sesión `PRODUCT` en producción. Baileys no es oficial: el número del producto puede ser restringido y debe ser uno dedicado a la demo.
+
