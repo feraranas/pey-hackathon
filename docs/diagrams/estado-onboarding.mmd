@@ -1,0 +1,31 @@
+stateDiagram-v2
+  direction TB
+  [*] --> SinCuenta
+  SinCuenta --> CapturandoDatos: el comerciante escribe al número del producto
+  CapturandoDatos --> ConfirmandoDatos: alias, nombre legal, CLABE de 18 dígitos y entity PERSON o BUSINESS
+  ConfirmandoDatos --> CapturandoDatos: corrige un dato
+  ConfirmandoDatos --> Registrando: consentimiento explícito versionado
+  Registrando --> PENDING: 200 con codiStatus PENDING
+  Registrando --> RechazoConocido: 400 INVALID_CLABE u otro definitivo
+  Registrando --> RegistroIncierto: timeout, 5xx o caída
+  RegistroIncierto --> RevisionManual: no existe búsqueda por CLABE documentada
+  RevisionManual --> ConfirmandoDatos: humano decide reintentar
+  RechazoConocido --> CapturandoDatos: corregir
+  PENDING --> PROCESSING: GET /bank-account/id
+  PENDING --> ACTIVE: webhook bank.account.updated o GET
+  PROCESSING --> ACTIVE: webhook bank.account.updated o GET
+  PENDING --> ERROR: GET con errorMessage
+  PROCESSING --> ERROR: GET con errorMessage
+  ERROR --> CapturandoDatos: corregir y volver a consentir
+  ACTIVE --> [*]
+  note right of PENDING
+    Mensaje: la activación puede tardar
+    hasta cinco días hábiles, te aviso
+    cuando pey la confirme.
+    Se pueden preparar órdenes,
+    no se crean cobros reales.
+  end note
+  note right of ERROR
+    ERROR no dispara webhook:
+    se detecta solo con GET periódico.
+  end note

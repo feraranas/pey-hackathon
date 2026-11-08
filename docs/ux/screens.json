@@ -1,0 +1,661 @@
+{
+  "meta": {
+    "title": "Cobros CoDi por WhatsApp · flujo en pantallas",
+    "disclaimer": "Maqueta ilustrativa, no es una captura real. Personas, negocio, números, CLABE y montos son ficticios. Los enlaces .example y los pagos son simulados. No es la interfaz oficial de WhatsApp ni un checkout publicado por pey.",
+    "merchant": "Rafa (Taller de Rafa)",
+    "chapters": {
+      "1": "Alta con el número del producto",
+      "2": "Ana: presupuesto → «Sí» → enlace → pago",
+      "3": "Luis: nota de voz → corrección → «Sí»",
+      "4": "Confirmaciones de pey y resumen"
+    }
+  },
+  "avatars": {
+    "R": {
+      "initials": "R",
+      "color": "#5E8B7E"
+    },
+    "AC": {
+      "initials": "AC",
+      "color": "#2563EB"
+    },
+    "AT": {
+      "initials": "AT",
+      "color": "#C77D5A"
+    },
+    "LR": {
+      "initials": "LR",
+      "color": "#5A7DC7"
+    },
+    "RC": {
+      "initials": "RC",
+      "color": "#9A8F5E"
+    },
+    "M": {
+      "initials": "M",
+      "color": "#B76E9B"
+    }
+  },
+  "screens": [
+    {
+      "id": "01",
+      "chapter": 1,
+      "type": "chatlist",
+      "clock": "10:06",
+      "caption": "Lista de chats de Rafa",
+      "note": "«Agente de cobros» es el número de WhatsApp del producto: ahí Rafa hace el alta, recibe propuestas, autoriza y recibe avisos. Ese número no puede leer los chats de Rafa; para eso Rafa vincula su WhatsApp, y el agente solo lee los chats de Ana y Luis.",
+      "rows": [
+        {
+          "name": "Ana Torres",
+          "avatar": "AT",
+          "time": "10:05",
+          "preview": "Hola Rafa, ¿ya quedó el diagnóstico del Aveo?",
+          "unread": 1
+        },
+        {
+          "name": "Refaccionaria Centro",
+          "avatar": "RC",
+          "time": "9:40",
+          "preview": "Las balatas llegan a las 9:30",
+          "ticks": "read"
+        },
+        {
+          "name": "Mamá",
+          "avatar": "M",
+          "time": "8:15",
+          "preview": "¿Vienes a comer el domingo?"
+        },
+        {
+          "name": "Luis Rivera",
+          "avatar": "LR",
+          "time": "Ayer",
+          "preview": "Va, mañana te llevo el Versa",
+          "ticks": "read"
+        },
+        {
+          "name": "Agente de cobros",
+          "avatar": "AC",
+          "time": "jueves",
+          "preview": "Ya estoy vinculado a tu WhatsApp y leo solo los chats…"
+        }
+      ]
+    },
+    {
+      "id": "02",
+      "chapter": 1,
+      "type": "chat",
+      "clock": "9:13",
+      "caption": "Alta: Rafa le escribe al número del producto",
+      "note": "Rafa escribe a un número de WhatsApp del producto (ficticio). El agente pide cuatro datos y una autorización explícita. La CLABE aparece enmascarada en la maqueta.",
+      "header": {
+        "name": "Agente de cobros",
+        "avatar": "AC"
+      },
+      "messages": [
+        {
+          "kind": "date",
+          "text": "Lunes 3 de noviembre"
+        },
+        {
+          "kind": "text",
+          "dir": "out",
+          "time": "9:10",
+          "text": "Hola, quiero empezar a cobrar con QR"
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "9:10",
+          "text": "¡Hola! Para registrar tu cuenta en pey necesito:\n1. Nombre del negocio\n2. Nombre legal del titular\n3. CLABE (18 dígitos)\n4. ¿Persona física o empresa?"
+        },
+        {
+          "kind": "text",
+          "dir": "out",
+          "time": "9:12",
+          "text": "Taller de Rafa\nRafael Ejemplo\n••••••••••••••1234\nPersona física"
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "9:12",
+          "text": "Confirma tus datos:\n• Negocio: Taller de Rafa\n• Titular: Rafael Ejemplo\n• CLABE: ••••1234\n• Tipo: persona física\nAl aceptar declaras que eres titular de esta cuenta y autorizas registrarla en pey para recibir cobros CoDi.\n¿Confirmas y autorizas el registro?"
+        }
+      ]
+    },
+    {
+      "id": "03",
+      "chapter": 1,
+      "type": "chat",
+      "clock": "8:04",
+      "caption": "Autoriza, vincula su WhatsApp y se activa",
+      "note": "Para leer los chats que Rafa elige, el servicio se vincula a su WhatsApp como dispositivo; el número del producto por sí solo no podría leerlos. El chat de Rafa con el número del producto queda excluido de esa lectura. La activación puede tardar hasta 5 días hábiles; aquí son 3 solo como ejemplo.",
+      "header": {
+        "name": "Agente de cobros",
+        "avatar": "AC"
+      },
+      "messages": [
+        {
+          "kind": "text",
+          "dir": "out",
+          "time": "9:13",
+          "text": "Sí, autorizo"
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "9:13",
+          "text": "Listo, envié tu registro a pey ✅ La activación puede tardar *hasta 5 días hábiles*; te aviso aquí."
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "9:14",
+          "text": "Para prepararte cobros vincúlame a tu WhatsApp: Ajustes → Dispositivos vinculados → Vincular con número de teléfono. Código: *DEMO-0000*"
+        },
+        {
+          "kind": "text",
+          "dir": "out",
+          "time": "9:16",
+          "text": "Listo. Solo lee a Ana Torres y Luis Rivera"
+        },
+        {
+          "kind": "date",
+          "text": "Jueves 6 de noviembre"
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "8:02",
+          "text": "✅ pey activó tu cuenta *Taller de Rafa* (••••1234). Desde ahora te propongo cobros y te aviso de pagos aquí, en este chat."
+        }
+      ]
+    },
+    {
+      "id": "04",
+      "chapter": 2,
+      "type": "chat",
+      "clock": "10:12",
+      "caption": "Rafa le da el desglose a Ana",
+      "note": "Rafa conversa como siempre. El agente observa este chat porque Rafa lo eligió, y no interviene ante Ana.",
+      "header": {
+        "name": "Ana Torres",
+        "avatar": "AT"
+      },
+      "messages": [
+        {
+          "kind": "date",
+          "text": "Hoy"
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "10:05",
+          "text": "Hola Rafa, ¿ya quedó el diagnóstico del Aveo?"
+        },
+        {
+          "kind": "text",
+          "dir": "out",
+          "time": "10:08",
+          "text": "Sí, ya lo revisé. Las balatas delanteras ya están en las últimas"
+        },
+        {
+          "kind": "text",
+          "dir": "out",
+          "time": "10:09",
+          "text": "Te queda así:\nBalatas delanteras $800\nMano de obra $400\nTotal $1,200"
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "10:11",
+          "text": "Va, dale 👍 ¿Cómo te pago?"
+        },
+        {
+          "kind": "text",
+          "dir": "out",
+          "time": "10:12",
+          "text": "Ahorita te mando para que pagues"
+        }
+      ]
+    },
+    {
+      "id": "05",
+      "chapter": 2,
+      "type": "chat",
+      "clock": "10:12",
+      "caption": "El agente le propone el cobro a Rafa",
+      "note": "El agente leyó el chat con Ana desde el WhatsApp vinculado de Rafa y le escribe desde el número del producto. Se dispara porque hay desglose con total y Ana aceptó. La propuesta queda fija internamente: Ana, estas partidas y $1,200.",
+      "header": {
+        "name": "Agente de cobros",
+        "avatar": "AC"
+      },
+      "messages": [
+        {
+          "kind": "date",
+          "text": "Jueves 6 de noviembre"
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "8:03",
+          "text": "Ya estoy vinculado a tu WhatsApp y leo solo los chats de Ana Torres y Luis Rivera. Por aquí te propondré cobros y te avisaré de pagos."
+        },
+        {
+          "kind": "date",
+          "text": "Hoy"
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "10:12",
+          "text": "*Ana Torres* aceptó tu presupuesto:\n• Balatas delanteras: $800.00\n• Mano de obra: $400.00\n*Total: $1,200.00 MXN*\n¿Le envío a Ana el cobro de $1,200 con este desglose?"
+        }
+      ]
+    },
+    {
+      "id": "06",
+      "chapter": 2,
+      "type": "chat",
+      "clock": "10:13",
+      "caption": "Rafa responde «Sí»",
+      "note": "El «Sí» llega de Rafa al número del producto y se liga a la única pregunta pendiente: Ana, $1,200 y este desglose. Autoriza un solo envío. Enviado todavía no significa pagado.",
+      "header": {
+        "name": "Agente de cobros",
+        "avatar": "AC"
+      },
+      "messages": [
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "10:12",
+          "text": "*Ana Torres* aceptó tu presupuesto:\n• Balatas delanteras: $800.00\n• Mano de obra: $400.00\n*Total: $1,200.00 MXN*\n¿Le envío a Ana el cobro de $1,200 con este desglose?"
+        },
+        {
+          "kind": "text",
+          "dir": "out",
+          "time": "10:13",
+          "text": "Sí"
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "10:13",
+          "text": "Listo ✅ Le envié a *Ana Torres* el cobro de *$1,200.00* con el desglose.\nAún no está pagado: te aviso cuando pey confirme el pago."
+        }
+      ]
+    },
+    {
+      "id": "07",
+      "chapter": 2,
+      "type": "chat",
+      "clock": "10:14",
+      "caption": "Ana recibe el enlace con el desglose",
+      "note": "El cobro autorizado sale del WhatsApp de Rafa (sesión vinculada) hacia el chat exacto de Ana, e indica que es un mensaje automático. El enlace lleva a una página propia planeada (cobro.example, ficticio) con un token opaco, no a un link hospedado de pey.",
+      "header": {
+        "name": "Ana Torres",
+        "avatar": "AT"
+      },
+      "messages": [
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "10:11",
+          "text": "Va, dale 👍 ¿Cómo te pago?"
+        },
+        {
+          "kind": "text",
+          "dir": "out",
+          "time": "10:12",
+          "text": "Ahorita te mando para que pagues"
+        },
+        {
+          "kind": "text",
+          "dir": "out",
+          "time": "10:13",
+          "text": "🤖 *Cobro de Taller de Rafa*\nBalatas delanteras $800 + Mano de obra $400\n*Total: $1,200.00 MXN*\nPaga con CoDi desde tu app bancaria:\nhttps://cobro.example/c/k7Q2mX",
+          "preview": {
+            "title": "Taller de Rafa · pey",
+            "desc": "Total a pagar: $1,200.00 MXN",
+            "domain": "cobro.example",
+            "qr": "https://example.invalid/demo/k7Q2mX"
+          }
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "10:14",
+          "text": "Perfecto, ahorita lo pago 🙏"
+        }
+      ]
+    },
+    {
+      "id": "08",
+      "chapter": 2,
+      "type": "checkout",
+      "clock": "10:15",
+      "caption": "Ana abre el enlace: checkout con estilo pey",
+      "note": "Concepto visual basado en el checkout de pey; no es un checkout publicado por pey. El monto es fijo y la comisión de $0.00 es ilustrativa. El MVP solo cobra con CoDi: la parte de tarjeta es referencia visual.",
+      "page": {
+        "domain": "cobro.example",
+        "business": "Taller de Rafa",
+        "concept": "Concepto de diseño · demo no pagable",
+        "label_total": "Total a pagar",
+        "amount_input": "1,200.00",
+        "total": "$1,200.00",
+        "label_products": "Productos:",
+        "products": "$1,200.00",
+        "label_fee": "Comisión:",
+        "fee": "$0.00*",
+        "fee_note": "*Comisión ilustrativa, no validada con pey",
+        "label_or": "O paga con",
+        "label_card": "Número de tarjeta",
+        "label_exp": "Fecha de vencimiento",
+        "label_cvc": "Código de seguridad",
+        "label_country": "País",
+        "country": "México",
+        "pay": "Pagar $1,200.00",
+        "card_note": "Vista de referencia · tarjeta fuera del MVP"
+      }
+    },
+    {
+      "id": "09",
+      "chapter": 2,
+      "type": "codiqr",
+      "clock": "10:15",
+      "caption": "Ana toca CoDi: QR de pago (demo)",
+      "note": "Muestra el QR que pey crea hacia la cuenta de Rafa. El de la maqueta apunta a example.invalid y no se puede pagar. Cómo se paga desde el mismo teléfono depende del banco y falta probarlo.",
+      "page": {
+        "domain": "cobro.example",
+        "business": "Taller de Rafa",
+        "concept": "Concepto de diseño · demo no pagable",
+        "total": "$1,200.00",
+        "detail": "Balatas delanteras + mano de obra",
+        "qr": "https://example.invalid/demo/k7Q2mX",
+        "expires": "Vigente hasta hoy 22:13",
+        "help": "Escanéalo con la app de tu banco (CoDi) desde otro teléfono. En este mismo teléfono: guarda la imagen y ábrela desde tu app, si tu banco lo permite.",
+        "save": "Guardar imagen del QR",
+        "footer": "Cobro CoDi de pey hacia la cuenta ••••1234"
+      }
+    },
+    {
+      "id": "10",
+      "chapter": 3,
+      "type": "chat",
+      "clock": "10:41",
+      "caption": "Rafa le cotiza a Luis con nota de voz",
+      "note": "En la nota de voz Rafa dice: aceite sintético $900, filtro $250, mano de obra $350, total $1,500. El agente la transcribe del lado del servidor; Luis acepta.",
+      "header": {
+        "name": "Luis Rivera",
+        "avatar": "LR"
+      },
+      "messages": [
+        {
+          "kind": "date",
+          "text": "Hoy"
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "10:36",
+          "text": "Rafa, ¿cuánto sale el servicio del Versa?"
+        },
+        {
+          "kind": "text",
+          "dir": "out",
+          "time": "10:37",
+          "text": "Déjame te digo"
+        },
+        {
+          "kind": "voice",
+          "dir": "out",
+          "time": "10:38",
+          "duration": "0:19",
+          "avatar": "R"
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "10:40",
+          "text": "Va, hazle 👍"
+        }
+      ]
+    },
+    {
+      "id": "11",
+      "chapter": 3,
+      "type": "chat",
+      "clock": "10:42",
+      "caption": "Pago de Ana confirmado; propuesta para Luis",
+      "note": "Las notificaciones de pago y las propuestas llegan del número del producto. Para Luis, el agente muestra lo que entendió de la nota de voz para que Rafa lo revise antes de decir que sí.",
+      "header": {
+        "name": "Agente de cobros",
+        "avatar": "AC"
+      },
+      "messages": [
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "10:21",
+          "text": "✅ *pey confirmó el pago*\nAna Torres · $1,200.00\nLlegó a tu cuenta ••••1234."
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "10:42",
+          "text": "*Luis Rivera* aceptó lo de tu nota de voz:\n• Aceite sintético: $900.00\n• Filtro: $250.00\n• Mano de obra: $350.00\n*Total: $1,500.00 MXN*\n¿Le envío a Luis el cobro de $1,500?"
+        }
+      ]
+    },
+    {
+      "id": "12",
+      "chapter": 3,
+      "type": "chat",
+      "clock": "10:45",
+      "caption": "Rafa corrige el precio con Luis",
+      "note": "Antes de contestar al agente, Rafa nota el error y lo corrige con Luis. Luis acepta el nuevo total.",
+      "header": {
+        "name": "Luis Rivera",
+        "avatar": "LR"
+      },
+      "messages": [
+        {
+          "kind": "voice",
+          "dir": "out",
+          "time": "10:38",
+          "duration": "0:19",
+          "avatar": "R"
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "10:40",
+          "text": "Va, hazle 👍"
+        },
+        {
+          "kind": "text",
+          "dir": "out",
+          "time": "10:44",
+          "text": "Perdón Luis, me equivoqué: el aceite sintético sale en $1,000. Total $1,600"
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "10:45",
+          "text": "Ah ok, no hay bronca. Va"
+        }
+      ]
+    },
+    {
+      "id": "13",
+      "chapter": 3,
+      "type": "chat",
+      "clock": "10:46",
+      "caption": "El agente actualiza el cobro; Rafa dice «Sí»",
+      "note": "La corrección invalida la propuesta de $1,500 sin enviar nada. El nuevo «Sí» se liga a la pregunta vigente: Luis, $1,600.",
+      "header": {
+        "name": "Agente de cobros",
+        "avatar": "AC"
+      },
+      "messages": [
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "10:45",
+          "text": "Actualicé el cobro de *Luis Rivera* a *$1,600.00*:\n• Aceite sintético: $1,000.00\n• Filtro: $250.00\n• Mano de obra: $350.00\nDescarté la cotización anterior de $1,500; no se envió nada.\n¿Se lo envío?"
+        },
+        {
+          "kind": "text",
+          "dir": "out",
+          "time": "10:46",
+          "text": "Sí"
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "10:46",
+          "text": "Listo ✅ Le envié a *Luis Rivera* el cobro de *$1,600.00*. Te aviso cuando pey confirme."
+        }
+      ]
+    },
+    {
+      "id": "14",
+      "chapter": 3,
+      "type": "chat",
+      "clock": "11:05",
+      "caption": "Luis recibe el enlace y manda un comprobante",
+      "note": "Luis sigue su costumbre y manda una captura del comprobante (ficticio). Una captura no se cuenta como prueba de pago.",
+      "header": {
+        "name": "Luis Rivera",
+        "avatar": "LR"
+      },
+      "messages": [
+        {
+          "kind": "text",
+          "dir": "out",
+          "time": "10:46",
+          "text": "🤖 *Cobro de Taller de Rafa*\nAceite sintético $1,000 + Filtro $250 + Mano de obra $350\n*Total: $1,600.00 MXN*\nPaga con CoDi desde tu app bancaria:\nhttps://cobro.example/c/r9Tz4B",
+          "preview": {
+            "title": "Taller de Rafa · pey",
+            "desc": "Total a pagar: $1,600.00 MXN",
+            "domain": "cobro.example",
+            "qr": "https://example.invalid/demo/r9Tz4B"
+          }
+        },
+        {
+          "kind": "image",
+          "dir": "in",
+          "time": "11:05",
+          "caption": "Listo, ya te pagué. Ahí va el comprobante",
+          "receipt": {
+            "amount": "$1,600.00",
+            "concept": "Servicio Versa Taller de Rafa",
+            "dest": "••••1234",
+            "date": "08/11/2026 11:04"
+          }
+        }
+      ]
+    },
+    {
+      "id": "15",
+      "chapter": 4,
+      "type": "chat",
+      "clock": "11:06",
+      "caption": "Comprobante recibido: queda como reportado",
+      "note": "El agente registra el comprobante de Luis, pero no lo cuenta como pagado: el cobro sigue pendiente hasta que pey lo confirme.",
+      "header": {
+        "name": "Agente de cobros",
+        "avatar": "AC"
+      },
+      "messages": [
+        {
+          "kind": "text",
+          "dir": "out",
+          "time": "10:46",
+          "text": "Sí"
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "10:46",
+          "text": "Listo ✅ Le envié a *Luis Rivera* el cobro de *$1,600.00*. Te aviso cuando pey confirme."
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "11:06",
+          "text": "📎 Luis Rivera mandó un comprobante por $1,600.00.\nLo dejo como *reportado*: todavía no lo cuento como pagado. Te aviso cuando pey lo confirme."
+        }
+      ]
+    },
+    {
+      "id": "16",
+      "chapter": 4,
+      "type": "chat",
+      "clock": "11:31",
+      "caption": "pey confirma a Luis; resumen del día",
+      "note": "La confirmación viene de pey, no de la foto. Rafa le pregunta al agente como a cualquier contacto. El resumen separa lo confirmado de lo descartado y cuadra: $1,200 + $1,600 = $2,800.",
+      "header": {
+        "name": "Agente de cobros",
+        "avatar": "AC"
+      },
+      "messages": [
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "11:09",
+          "text": "✅ *pey confirmó el pago*\nLuis Rivera · $1,600.00\nLlegó a tu cuenta ••••1234."
+        },
+        {
+          "kind": "text",
+          "dir": "out",
+          "time": "11:30",
+          "text": "¿Cómo voy hoy?"
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "11:30",
+          "text": "*Cobros de hoy*\n✅ Ana Torres · $1,200.00\n✅ Luis Rivera · $1,600.00\nCotización anterior de Luis ($1,500): descartada, no se envió\n*Confirmado por pey: $2,800.00*\nPendiente por cobrar: $0.00"
+        }
+      ]
+    },
+    {
+      "id": "17",
+      "chapter": 4,
+      "type": "chat",
+      "clock": "11:32",
+      "caption": "Rafa le agradece a Luis",
+      "note": "Rafa escribe este mensaje él mismo: el agente no le habla al cliente por iniciativa propia.",
+      "header": {
+        "name": "Luis Rivera",
+        "avatar": "LR"
+      },
+      "messages": [
+        {
+          "kind": "image",
+          "dir": "in",
+          "time": "11:05",
+          "caption": "Listo, ya te pagué. Ahí va el comprobante",
+          "receipt": {
+            "amount": "$1,600.00",
+            "concept": "Servicio Versa Taller de Rafa",
+            "dest": "••••1234",
+            "date": "08/11/2026 11:04"
+          }
+        },
+        {
+          "kind": "text",
+          "dir": "out",
+          "time": "11:31",
+          "text": "¡Gracias Luis! Ya me llegó 🙌 Tu Versa queda listo a las 5"
+        },
+        {
+          "kind": "text",
+          "dir": "in",
+          "time": "11:32",
+          "text": "Gracias Rafa 🙌"
+        }
+      ]
+    }
+  ]
+}

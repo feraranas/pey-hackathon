@@ -1,0 +1,36 @@
+flowchart TD
+  A["Evento nuevo de Baileys"] --> B{"¿Sesión PRODUCT, o sesión MERCHANT<br/>en chat de la allowlist (nunca el chat<br/>con el producto), y evento nuevo?"}
+  B -- No --> Z["Ignorar sin guardar contenido"]
+  B -- Sí --> C{"¿Sesión PRODUCT, 1:1, fromMe=false,<br/>remitente = JID registrado de Rafa<br/>y ID que no es eco del bot?"}
+  C -- "Sí: comando" --> J{"¿El sí se liga a una sola<br/>pregunta abierta y vigente?<br/>(estado, no el modelo)"}
+  C -- "No: contexto de cliente<br/>o del comerciante" --> D["Extraer hechos con evidencia<br/>texto primero, audio opcional"]
+  D --> E{"¿Trabajo y monto acordados<br/>sin ambigüedad?"}
+  E -- No --> F["Esperar más contexto o pedir<br/>aclaración privada"]
+  E -- Sí --> G["Crear o versionar WorkOrder<br/>y ChargeIntent con monto fijo:<br/>anticipo, saldo o total"]
+  G --> H{"¿Cuenta receptora propia<br/>en ACTIVE?"}
+  H -- No --> H2["Avisar en privado: cuenta<br/>pendiente; no ofrecer cobro real"]
+  H -- Sí --> I["Pregunta desde el número del producto:<br/>¿Le envío a Ana $1,200?"]
+  I --> J
+  J -- "No: 0 o 2+ abiertas,<br/>sustituida o vencida" --> F
+  J -- Sí --> K{"¿Mismo digest, vigente,<br/>cuenta ACTIVE del mismo<br/>comerciante?"}
+  K -- No --> L["Rechazar; proponer nueva versión"]
+  K -- Sí --> M["Una transacción SQL: aprobación +<br/>trabajo de creación de QR"]
+  M --> N["Worker: POST /codi/qr con amount fijo,<br/>bankAccountId, numRef, metadata, expiration"]
+  N --> O{"¿Resultado?"}
+  O -- "201" --> R["Guardar IDC y qrString;<br/>encolar entrega al JID exacto"]
+  O -- "4xx definitivo" --> Q["Fallo conocido: avisar;<br/>no enviar nada"]
+  O -- "timeout / 5xx / crash" --> P["Creación incierta: sin qrString<br/>no hay nada que enviar;<br/>nuevo intento solo con nuevo sí"]
+  R --> S["Sesión MERCHANT: preasignar ID,<br/>persistir, enviar enlace o QR +<br/>desglose al chat exacto del cliente"]
+  S --> T{"¿Eco o ack con ese ID?"}
+  T -- Sí --> U["Entregado; no significa pagado"]
+  T -- "Incierto" --> P2["Entrega incierta: revisión;<br/>nunca reenviar a ciegas"]
+  WH["POST /webhooks/pey"] --> WV{"¿Firma Standard Webhooks<br/>válida?"}
+  WV -- No --> WR["Rechazar 4xx; no guardar cuerpo"]
+  WV -- Sí --> WS["Guardar crudo por webhook-id<br/>y responder 2xx"]
+  WS --> WT["GET /transaction/transactionId:<br/>PAID, MXN, base, payableId"]
+  WT --> WX{"¿IDC conocido, receptor,<br/>monto y estado coinciden?"}
+  WX -- No --> WQ["Cuarentena o revisión;<br/>nunca marcar pagado"]
+  WX -- Sí --> WP["Aplicar una vez por transactionId<br/>al ChargeIntent y al saldo de la orden"]
+  WP --> WN["Aviso desde el número del producto:<br/>recibiste $X por<br/>este cobro; saldo verificado y efectivo<br/>registrado por separado"]
+  U -.-> WH
+  P2 -.->|"el pago puede llegar igual"| WH

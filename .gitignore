@@ -1,0 +1,42 @@
+# Dependencias y builds
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Secretos y configuración local
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Sesión de WhatsApp (Baileys) y datos de ejecución
+auth/
+auth_info*/
+baileys_auth*/
+session*/
+data/
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+
+# Medios temporales y logs
+media/
+tmp/
+*.log
+
+# Sistema
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# videos generados (demo animada)
+*.mp4

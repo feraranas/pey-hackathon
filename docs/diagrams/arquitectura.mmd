@@ -1,0 +1,50 @@
+flowchart TB
+  subgraph WAM["WhatsApp de Rafa (sesión vinculada, solo lectura de chats elegidos)"]
+    C["Chat con cliente<br/>(allowlist)"]
+  end
+  subgraph WAP["Número del producto «Agente de cobros»"]
+    S["Chat Rafa ↔ Agente de cobros<br/>(canal de control)"]
+  end
+  Cli(["Cliente"]) <-->|"mensajes, audios,<br/>enlace + desglose"| C
+  M(["Comerciante"]) <-->|"conversa y cobra"| C
+  M <-->|"alta, «Sí», efectivo,<br/>consultas"| S
+
+  subgraph APP["Servicio único Node.js + TypeScript (un proceso, un volumen)"]
+    BM["Sesión Baileys MERCHANT<br/>dispositivo vinculado de Rafa:<br/>lee allowlist, envía cobros autorizados;<br/>excluye el chat con el producto"]
+    BP["Sesión Baileys PRODUCT<br/>número del producto:<br/>comandos con fromMe=false y<br/>remitente = JID de Rafa"]
+    EX["Extracción<br/>OpenAI: transcripción +<br/>salida estructurada Zod"]
+    CO["Coordinador<br/>único escritor del dominio:<br/>órdenes, intents, preguntas,<br/>aprobación, saldo, outbox"]
+    PA["Adaptador pey<br/>REST + verificación<br/>Standard Webhooks"]
+    HT["Fastify HTTPS<br/>POST /webhooks/pey"]
+    DB[("SQLite WAL<br/>better-sqlite3")]
+    W["Worker de outbox<br/>y temporizador"]
+    PG["Página de cobro opcional<br/>GET /c/token, solo lectura:<br/>desglose + QR de pey"]
+  end
+
+  C -.->|"observación: contexto,<br/>nunca autoridad"| BM
+  S -->|"mensaje entrante de Rafa"| BP
+  BM -->|"observación de cliente"| CO
+  BP -->|"comando autenticado"| CO
+  CO -->|"texto o audio a hechos"| EX
+  EX -->|"CandidateFacts<br/>sin capacidad de enviar"| CO
+  CO <-->|"transacciones cortas,<br/>sin red dentro"| DB
+  W -->|"reclama trabajo durable"| DB
+  W -->|"crear QR / registrar CLABE /<br/>consultar estado"| PA
+  W -->|"pregunta, aviso"| BP
+  W -->|"cobro aprobado al<br/>destinatario exacto"| BM
+  BP -->|"envío al JID de Rafa"| S
+  BM -->|"envío autorizado"| C
+  PA <-->|"HTTPS Bearer"| PEY[("API pey<br/>api.pey.mx")]
+  PEY -->|"webhook firmado"| HT
+  HT -->|"firma válida: guardar<br/>y luego 2xx"| DB
+  PEY -.->|"SPEI vía CoDi: el dinero<br/>no pasa por el servicio"| BANK[("Cuenta CLABE<br/>del comerciante")]
+  Cli -.->|"paga con su app bancaria"| PEY
+  Cli -.->|"abre el enlace (opcional)"| PG
+  PG -->|"lee intent vigente"| DB
+
+  classDef human fill:#fff3cd,stroke:#b58900,color:#222
+  classDef ext fill:#e8f0fe,stroke:#1a73e8,color:#222
+  classDef core fill:#e6f4ea,stroke:#188038,color:#222
+  class M,Cli human
+  class PEY,BANK ext
+  class CO,DB core

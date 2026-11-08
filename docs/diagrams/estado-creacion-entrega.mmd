@@ -1,0 +1,30 @@
+stateDiagram-v2
+  direction TB
+  state "Creación del QR en pey" as Creacion {
+    [*] --> EnCola
+    EnCola --> EnVuelo: worker marca intento antes del HTTP
+    EnVuelo --> Creado: 201 con IDC y qrString
+    EnVuelo --> FalloConocido: 400 definitivo
+    EnVuelo --> CreacionIncierta: timeout, 5xx o caída
+    CreacionIncierta --> RequiereNuevoSi: sin qrString no se envía nada
+    FalloConocido --> [*]
+    RequiereNuevoSi --> [*]
+  }
+  state "Entrega por WhatsApp" as Entrega {
+    [*] --> Pendiente
+    Pendiente --> IdReservado: ID de mensaje preasignado y persistido
+    IdReservado --> Enviando: destinatario igual al de la aprobación
+    Enviando --> Entregado: eco o ack con el ID reservado
+    Enviando --> Pendiente: error claro antes de transmitir
+    Enviando --> EntregaIncierta: sin ack tras reconexión
+    EntregaIncierta --> Entregado: aparece eco con el ID reservado
+    EntregaIncierta --> RevisionManual: vence la ventana de espera
+    RevisionManual --> Pendiente: el comerciante autoriza reenviar
+    Entregado --> [*]
+  }
+  Creado --> Entrega: encola entrega del mismo intent
+  note right of Entrega
+    Entregado no significa pagado.
+    Un pago verificado puede llegar
+    aunque la entrega siga incierta.
+  end note

@@ -1,0 +1,29 @@
+{
+  "_doc": "Ajustes del modo limpio (render_mockups.py --clean y la animación). No cambian screens.json ni las maquetas de mockups/.",
+  "qr_asset": "assets/pey-qr-checkout.png",
+  "link_domain": "app.mipey.mx",
+  "replace_text": {
+    "DEMO-0000": "K7QM-29XB",
+    "https://cobro.example/c/k7Q2mX": "https://app.mipey.mx/checkout/payment-qr/01M6VX12YC0469HRZN7R5T1KWW",
+    "https://cobro.example/c/r9Tz4B": "https://app.mipey.mx/checkout/payment-qr/01M6VX12YC0469HRZN7R5T1KWW"
+  },
+  "hidden_screens": {
+    "00": {"from": "01", "note": "Lista de chats de Rafa: se usa en la animación, no se exporta como pantalla"}
+  },
+  "screen_overrides": {
+    "01": {
+      "type": "chat",
+      "clock": "9:10",
+      "caption": "Rafa, mecánico, le escribe al Agente de cobros",
+      "header": {"name": "Agente de cobros", "avatar": "AC"},
+      "messages": [
+        {"kind": "date", "text": "Lunes 3 de noviembre"},
+        {"kind": "text", "dir": "out", "time": "9:09", "text": "Soy Rafa, soy mecánico. Acuerdo los trabajos por WhatsApp, pero para cobrar tengo que mandar mi CLABE, esperar comprobantes y revisar si ya cayó el dinero."},
+        {"kind": "text", "dir": "out", "time": "9:10", "text": "Quiero empezar a cobrar con QR"}
+      ]
+    }
+  },
+  "message_overrides": {
+    "02:1": {"text": "Quiero empezar a cobrar con QR"}
+  }
+}
