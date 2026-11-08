@@ -40,3 +40,6 @@ __pycache__/
 
 # videos generados (demo animada)
 *.mp4
+
+# Approved README demo video
+!docs/ux/demo/ya-cayo-el-biyuyo.mp4
