@@ -27,7 +27,7 @@ No aparecen códigos de aprobación.
 ## Archivos
 
 - [`timeline.json`](timeline.json): el guion. Cada paso (`send`, `recv`, `appear`, `banner`, `open`, `page`, `tap`, `caption`, `card`…) apunta a un mensaje de `screens.json` con `pantalla:índice`, así que el texto es el mismo que en las maquetas.
-- [`animate_demo.py`](animate_demo.py): el motor. Reutiliza las funciones de [`../render_mockups.py`](../render_mockups.py): burbujas, encabezados, compositor, checkout y QR. Las animaciones (mensajes que entran deslizándose, «escribiendo…», texto que se escribe en el compositor, notificaciones, transiciones push/pop, toques) se dibujan con Pillow, y los fotogramas pasan a `ffmpeg` por una tubería.
+- [`animate_demo.py`](animate_demo.py): el motor. Reutiliza las funciones de [`../render_mockups.py`](../render_mockups.py): burbujas, encabezados, compositor, checkout y QR. Las animaciones (mensajes que entran deslizándose, «escribiendo…», texto que se escribe en el compositor, notificaciones, transiciones push/pop, toques) se dibujan con Pillow, y los fotogramas pasan a `ffmpeg` por una tubería. En los fundidos solo se mezcla el teléfono. Los textos de los costados cambian en corte limpio: cada fotograma lleva el fondo completo del estado nuevo, así nunca se superponen dos títulos. La tarjeta «Días después» se dibuja sobre la escena sin el texto del panel, y las tarjetas de pantalla completa pasan antes por un fondo liso.
 
 ## Regenerar
 

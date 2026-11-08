@@ -535,17 +535,33 @@ class Director:
     def op_card(self, s):
         n = self.nf(s['dur'])
         if s['kind'] == 'timejump':
+            # Debajo de la tarjeta va la escena sin textos del panel derecho
+            # (corte limpio), y al final la tarjeta se retira sobre esa misma escena.
             under = self.last
+            if self.last_phone is not None:
+                under = self.stage.compose(self.stage.base(self.chapter, self.who, None), self.last_phone)
+            n_out = self.nf(0.35)
+            end = self.stage.card(s, under, (n - n_out) / n)
             for i in range(n):
-                self.emit(self.stage.card(s, under, i / n))
+                if i < n - n_out:
+                    self.emit(self.stage.card(s, under, i / n))
+                else:
+                    self.emit(Image.blend(end, under, ease_io((i - (n - n_out) + 1) / n_out)))
         else:
             im = self.stage.card(s)
+            # fundido en dos mitades (escena -> fondo liso -> tarjeta) para que
+            # el texto de la escena y el de la tarjeta no coincidan en pantalla
             fade = self.nf(0.5)
+            half = max(1, fade // 2)
             prev = self.last
+            plain_bg = Image.new('RGB', (SW, SH), im.getpixel((5, 5)))
             for i in range(n):
                 fr = im
                 if prev is not None and i < fade:
-                    fr = Image.blend(prev, im, ease_io(i / fade))
+                    if i < half:
+                        fr = Image.blend(prev, plain_bg, ease_io((i + 1) / half))
+                    else:
+                        fr = Image.blend(plain_bg, im, ease_io((i - half + 1) / max(1, fade - half)))
                 self.emit(fr)
         self.last_card = True
 
@@ -565,10 +581,19 @@ class Director:
         new = self.compose(self.cur_phone())
         self.crossfade(old, new, 0.4)
 
+    # Solo el teléfono se funde. Los paneles de texto (capítulos y panel derecho)
+    # cambian en corte limpio: cada fotograma lleva el fondo completo del estado
+    # nuevo, así nunca se ven dos títulos superpuestos.
+    PHONE_BOX = (PH_X - 16, PH_Y - 16, PH_X + PH_W + 16, PH_Y + PH_H + 16)
+
     def crossfade(self, a, b, sec):
         n = self.nf(sec)
+        box = self.PHONE_BOX
+        pa, pb = a.crop(box), b.crop(box)
         for i in range(n):
-            self.emit(Image.blend(a, b, ease_io((i + 1) / n)))
+            fr = b.copy()
+            fr.paste(Image.blend(pa, pb, ease_io((i + 1) / n)), box[:2])
+            self.emit(fr)
 
     def _switch(self, new_view, transition):
         old_phone = self.cur_phone() if self.view else None
