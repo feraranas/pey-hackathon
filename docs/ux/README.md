@@ -73,6 +73,10 @@ Rafa pidió mandar un **enlace** de pago. El link hospedado de pey (`POST /payme
 - La sección de tarjeta se muestra deshabilitada solo como referencia visual: el MVP cobra con CoDi.
 - Falta probarlo: cómo paga el cliente un QR que abre **en su mismo teléfono** depende de su banco. La pantalla 09 lo dice tal cual.
 
+## Demo animada
+
+Hay una versión animada y guionizada del mismo flujo en [`demo/`](demo/README.md): video de 1080p generado a partir de `screens.json`, con datos ficticios y sin sesiones reales.
+
 ## Regenerar
 
 ```bash

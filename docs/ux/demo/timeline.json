@@ -1,0 +1,519 @@
+{
+  "meta": {
+    "title": "Cobros CoDi por WhatsApp · demo guionizada",
+    "fps": 30,
+    "watermark": "DEMO GUIONIZADA · DATOS FICTICIOS",
+    "disclaimer": "Maqueta animada del flujo planeado · no es WhatsApp, pey ni una sesión real · sin cuentas, chats ni pagos reales",
+    "chapters": {
+      "1": "Alta con el número del producto",
+      "2": "Ana: presupuesto → «Sí» → pago",
+      "3": "Luis: nota de voz → corrección → «Sí»",
+      "4": "Comprobante, confirmación y resumen"
+    },
+    "phones": {
+      "rafa": {
+        "label": "TELÉFONO DE RAFA · comerciante",
+        "color": "#111B21"
+      },
+      "ana": {
+        "label": "TELÉFONO DE ANA · cliente",
+        "color": "#2D6AE4"
+      }
+    },
+    "chats": {
+      "agent": {
+        "screen": "02"
+      },
+      "ana": {
+        "screen": "04"
+      },
+      "luis": {
+        "screen": "10"
+      }
+    }
+  },
+  "steps": [
+    {
+      "op": "card",
+      "kind": "intro",
+      "dur": 4.5,
+      "title": "Cobros CoDi por WhatsApp",
+      "body": "Un agente que detecta cobros en los chats de un taller y le pide permiso al dueño antes de enviarlos.",
+      "note": "Demo guionizada con datos ficticios. Es una maqueta del flujo planeado: no hay app construida ni cuentas reales."
+    },
+    {
+      "op": "chapter",
+      "n": 1
+    },
+    {
+      "op": "phone",
+      "who": "rafa"
+    },
+    {
+      "op": "caption",
+      "title": "Rafa le escribe al Agente de cobros",
+      "body": "Es un número de WhatsApp del producto. Rafa lo usa como cualquier contacto: sus mensajes van en verde y los del agente en blanco.",
+      "tech": "Sesión PRODUCT: número del producto"
+    },
+    {
+      "op": "open",
+      "chat": "agent",
+      "transition": "cut",
+      "clock": "9:10"
+    },
+    {
+      "op": "appear",
+      "ref": "02:0",
+      "hold": 0.3
+    },
+    {
+      "op": "send",
+      "ref": "02:1"
+    },
+    {
+      "op": "recv",
+      "ref": "02:2"
+    },
+    {
+      "op": "caption",
+      "title": "Cuatro datos para registrar su CLABE en pey",
+      "body": "Negocio, titular, CLABE y tipo de persona. En la maqueta la CLABE aparece enmascarada.",
+      "tech": "POST /bank-account (en el diseño)"
+    },
+    {
+      "op": "send",
+      "ref": "02:3"
+    },
+    {
+      "op": "recv",
+      "ref": "02:4",
+      "hold": 3.0
+    },
+    {
+      "op": "caption",
+      "title": "Autoriza con un «Sí» natural",
+      "body": "Sin códigos: el consentimiento es la respuesta a la confirmación inmediata, con esos mismos datos.",
+      "tech": "Consentimiento versionado; si cambian los datos, se vuelve a preguntar"
+    },
+    {
+      "op": "send",
+      "ref": "03:0"
+    },
+    {
+      "op": "recv",
+      "ref": "03:1"
+    },
+    {
+      "op": "caption",
+      "title": "Vincula su WhatsApp y elige qué chats lee el agente",
+      "body": "El número del producto no puede leer las conversaciones de Rafa con sus clientes. Para eso Rafa vincula su WhatsApp como dispositivo.",
+      "tech": "Sesión MERCHANT: WhatsApp de Rafa vinculado (Baileys)"
+    },
+    {
+      "op": "recv",
+      "ref": "03:2"
+    },
+    {
+      "op": "send",
+      "ref": "03:3"
+    },
+    {
+      "op": "card",
+      "kind": "timejump",
+      "dur": 4.2,
+      "title": "Salto de tiempo escenificado",
+      "body": "Lunes 3 nov, 9:16  →  Jueves 6 nov, 8:02",
+      "note": "pey puede tardar hasta 5 días hábiles en activar la cuenta. En la demo lo adelantamos: no es un tiempo medido."
+    },
+    {
+      "op": "caption",
+      "title": "pey activó la cuenta",
+      "body": "Desde ahora el agente le propone cobros y le avisa de pagos en este mismo chat.",
+      "tech": "codiStatus: ACTIVE (simulado)"
+    },
+    {
+      "op": "appear",
+      "ref": "03:4",
+      "hold": 0.3,
+      "clock": "8:02"
+    },
+    {
+      "op": "recv",
+      "ref": "03:5"
+    },
+    {
+      "op": "recv",
+      "ref": "05:1"
+    },
+    {
+      "op": "chapter",
+      "n": 2
+    },
+    {
+      "op": "caption",
+      "title": "Domingo: Ana le pregunta a Rafa por su coche",
+      "body": "Rafa contesta desde su WhatsApp, como siempre. El agente solo observa este chat porque Rafa lo eligió.",
+      "tech": "Sesión MERCHANT: chat de la allowlist"
+    },
+    {
+      "op": "chatlist",
+      "screen": "01",
+      "transition": "pop"
+    },
+    {
+      "op": "tap",
+      "x": 196,
+      "y": 139
+    },
+    {
+      "op": "open",
+      "chat": "ana",
+      "transition": "push",
+      "preload": [
+        "04:0",
+        "04:1"
+      ],
+      "clock": "10:06"
+    },
+    {
+      "op": "send",
+      "ref": "04:2"
+    },
+    {
+      "op": "send",
+      "ref": "04:3"
+    },
+    {
+      "op": "recv",
+      "ref": "04:4"
+    },
+    {
+      "op": "send",
+      "ref": "04:5"
+    },
+    {
+      "op": "caption",
+      "title": "El agente detecta el acuerdo y avisa",
+      "body": "Hay desglose, total y Ana aceptó. El agente le escribe a Rafa desde el número del producto; a Ana no le dice nada.",
+      "tech": "Detector → propuesta inmutable: Ana · 2 partidas · $1,200"
+    },
+    {
+      "op": "banner",
+      "from": "agent",
+      "ref": "05:3",
+      "hold": 3.4
+    },
+    {
+      "op": "open",
+      "chat": "agent",
+      "transition": "push"
+    },
+    {
+      "op": "appear",
+      "ref": "05:2",
+      "hold": 0.2
+    },
+    {
+      "op": "appear",
+      "ref": "05:3",
+      "hold": 3.4
+    },
+    {
+      "op": "caption",
+      "title": "Rafa responde «Sí»",
+      "body": "Ese «Sí» se liga a la única pregunta abierta: Ana, $1,200 y este desglose. Autoriza un solo envío.",
+      "tech": "Comando: mensaje entrante de Rafa al número del producto"
+    },
+    {
+      "op": "send",
+      "ref": "06:1"
+    },
+    {
+      "op": "recv",
+      "ref": "06:2"
+    },
+    {
+      "op": "caption",
+      "title": "El cobro sale del WhatsApp de Rafa",
+      "body": "Va al chat exacto de Ana, con el desglose y un enlace. El mensaje indica que es automático.",
+      "tech": "Sesión MERCHANT → destinatario del intent aprobado"
+    },
+    {
+      "op": "open",
+      "chat": "ana",
+      "transition": "pop"
+    },
+    {
+      "op": "appear",
+      "ref": "07:2"
+    },
+    {
+      "op": "recv",
+      "ref": "07:3"
+    },
+    {
+      "op": "phone",
+      "who": "ana"
+    },
+    {
+      "op": "caption",
+      "title": "Ana abre el enlace",
+      "body": "Página propia con el estilo del checkout de pey: total, productos y comisión ilustrativa. La parte de tarjeta es solo referencia visual.",
+      "tech": "GET /c/token · solo lectura"
+    },
+    {
+      "op": "page",
+      "screen": "08",
+      "transition": "fade",
+      "hold": 3.0
+    },
+    {
+      "op": "tap",
+      "x": 196,
+      "y": 369
+    },
+    {
+      "op": "caption",
+      "title": "Paga con CoDi desde su app bancaria",
+      "body": "El QR lo crea pey hacia la cuenta de Rafa. El de la demo no se puede pagar.",
+      "tech": "POST /codi/qr con bankAccountId de Rafa"
+    },
+    {
+      "op": "page",
+      "screen": "09",
+      "transition": "push",
+      "hold": 3.0
+    },
+    {
+      "op": "phone",
+      "who": "rafa"
+    },
+    {
+      "op": "caption",
+      "title": "pey confirma el pago",
+      "body": "El aviso llega del número del producto. «Pagado» solo cuando pey lo confirma: webhook firmado y verificado con la API.",
+      "tech": "Webhook verificado + GET /transaction (simulado)"
+    },
+    {
+      "op": "open",
+      "chat": "ana",
+      "transition": "cut",
+      "clock": "10:21"
+    },
+    {
+      "op": "banner",
+      "from": "agent",
+      "ref": "11:0"
+    },
+    {
+      "op": "open",
+      "chat": "agent",
+      "transition": "push"
+    },
+    {
+      "op": "appear",
+      "ref": "11:0"
+    },
+    {
+      "op": "chapter",
+      "n": 3
+    },
+    {
+      "op": "caption",
+      "title": "Luis pregunta por el servicio de su Versa",
+      "body": "Rafa le cotiza con una nota de voz, como acostumbra.",
+      "tech": "Sesión MERCHANT: chat de la allowlist"
+    },
+    {
+      "op": "banner",
+      "from": "luis",
+      "ref": "10:1"
+    },
+    {
+      "op": "open",
+      "chat": "luis",
+      "transition": "push",
+      "preload": [
+        "10:0",
+        "10:1"
+      ]
+    },
+    {
+      "op": "send",
+      "ref": "10:2"
+    },
+    {
+      "op": "caption",
+      "title": "La cotización llega por audio",
+      "body": "Nota de voz representada, sin audio real. En el diseño, el servicio la transcribe y extrae partidas y total.",
+      "tech": "Extracción: el modelo propone hechos, no envía nada"
+    },
+    {
+      "op": "appear",
+      "ref": "10:3"
+    },
+    {
+      "op": "recv",
+      "ref": "10:4"
+    },
+    {
+      "op": "caption",
+      "title": "Propuesta para Luis: $1,500",
+      "body": "El agente muestra lo que entendió del audio para que Rafa lo revise antes de decir que sí.",
+      "tech": "Pregunta abierta: Luis · $1,500"
+    },
+    {
+      "op": "banner",
+      "from": "agent",
+      "ref": "11:1",
+      "hold": 3.0
+    },
+    {
+      "op": "open",
+      "chat": "agent",
+      "transition": "push"
+    },
+    {
+      "op": "appear",
+      "ref": "11:1",
+      "hold": 3.0
+    },
+    {
+      "op": "caption",
+      "title": "Rafa nota un error antes de contestar",
+      "body": "El aceite sintético cuesta $1,000, no $900. Lo corrige directamente con Luis.",
+      "tech": "Sin respuesta, nada se envía"
+    },
+    {
+      "op": "open",
+      "chat": "luis",
+      "transition": "pop"
+    },
+    {
+      "op": "send",
+      "ref": "12:2"
+    },
+    {
+      "op": "recv",
+      "ref": "12:3"
+    },
+    {
+      "op": "caption",
+      "title": "La cotización de $1,500 queda descartada",
+      "body": "No se envió nada. El agente actualiza el cobro y vuelve a preguntar con el nuevo total.",
+      "tech": "Propuesta anterior sustituida · pregunta nueva: Luis · $1,600"
+    },
+    {
+      "op": "banner",
+      "from": "agent",
+      "ref": "13:0",
+      "hold": 3.4
+    },
+    {
+      "op": "open",
+      "chat": "agent",
+      "transition": "push"
+    },
+    {
+      "op": "appear",
+      "ref": "13:0",
+      "hold": 3.4
+    },
+    {
+      "op": "caption",
+      "title": "Un «Sí» para la versión vigente",
+      "body": "El «Sí» se liga a la pregunta nueva: Luis, $1,600. Si hubiera dos preguntas abiertas, el agente preguntaría cuál.",
+      "tech": "Un «sí» autoriza exactamente un cobro"
+    },
+    {
+      "op": "send",
+      "ref": "13:1"
+    },
+    {
+      "op": "recv",
+      "ref": "13:2"
+    },
+    {
+      "op": "caption",
+      "title": "Luis recibe el cobro y manda su comprobante",
+      "body": "El cobro de $1,600 sale del WhatsApp de Rafa. Luis, por costumbre, manda una captura (ficticia).",
+      "tech": "Sesión MERCHANT → chat exacto de Luis"
+    },
+    {
+      "op": "open",
+      "chat": "luis",
+      "transition": "pop"
+    },
+    {
+      "op": "appear",
+      "ref": "14:0"
+    },
+    {
+      "op": "recv",
+      "ref": "14:1",
+      "typing": 1.0
+    },
+    {
+      "op": "chapter",
+      "n": 4
+    },
+    {
+      "op": "caption",
+      "title": "Un comprobante no es un pago",
+      "body": "El agente lo registra como reportado y espera la confirmación de pey.",
+      "tech": "ReportedReceipt: no cambia el saldo"
+    },
+    {
+      "op": "banner",
+      "from": "agent",
+      "ref": "15:2"
+    },
+    {
+      "op": "open",
+      "chat": "agent",
+      "transition": "push"
+    },
+    {
+      "op": "appear",
+      "ref": "15:2"
+    },
+    {
+      "op": "caption",
+      "title": "Ahora sí: pey confirma el pago de Luis",
+      "body": "La confirmación viene de pey, no de la foto.",
+      "tech": "Webhook verificado + GET /transaction (simulado)"
+    },
+    {
+      "op": "recv",
+      "ref": "16:0"
+    },
+    {
+      "op": "caption",
+      "title": "Rafa le pregunta al agente cómo va",
+      "body": "El resumen separa lo confirmado de lo descartado: $1,200 + $1,600 = $2,800.",
+      "tech": "Saldo derivado: verificado · efectivo · pendiente"
+    },
+    {
+      "op": "send",
+      "ref": "16:1"
+    },
+    {
+      "op": "recv",
+      "ref": "16:2",
+      "hold": 4.5
+    },
+    {
+      "op": "card",
+      "kind": "end",
+      "dur": 6.5,
+      "title": "Rafa habla con su Agente de cobros. Sus clientes siguen hablando con Rafa.",
+      "bullets": [
+        "Número del producto: alta, propuestas, «Sí» y avisos de pago",
+        "WhatsApp de Rafa vinculado: lee solo los chats elegidos y envía los cobros aprobados",
+        "Pagado = confirmado por pey; un comprobante queda como reportado",
+        "Confirmado por pey en la demo: $2,800.00"
+      ],
+      "note": "Demo guionizada con datos ficticios · no es una sesión real de WhatsApp ni de pey."
+    }
+  ]
+}

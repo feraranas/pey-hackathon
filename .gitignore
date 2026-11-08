@@ -37,3 +37,6 @@ tmp/
 # Python
 __pycache__/
 *.pyc
+
+# videos generados (demo animada)
+*.mp4
