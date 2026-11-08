@@ -1,3 +1,7 @@
+[![Ver video: Ya cayó el biyuyo](docs/ux/demo/ya-cayo-el-biyuyo.jpg)](docs/ux/demo/ya-cayo-el-biyuyo.mp4)
+
+**[▶ Ver video — Ya cayó el biyuyo (2:41)](docs/ux/demo/ya-cayo-el-biyuyo.mp4)** · Presentación del producto; no acredita un pago real ni la vinculación de WhatsApp.
+
 # Ya cayó el biyuyo
 
 **Cobros CoDi por WhatsApp para quien vive de su oficio.** Un agente observa los chats con clientes que el comerciante elige. Cuando detecta un trabajo acordado, le pregunta en privado si quiere enviar un QR de pey con el desglose. Solo con su "sí" lo envía al cliente correcto, y avisa cuando pey confirma el pago.
