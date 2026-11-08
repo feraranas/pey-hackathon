@@ -40,3 +40,9 @@ __pycache__/
 
 # videos generados (demo animada)
 *.mp4
+
+# Private deployment state
+*.enc
+*.env
+backups/
+
