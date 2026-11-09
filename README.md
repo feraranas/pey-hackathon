@@ -1,6 +1,7 @@
 # Youtube demo - https://youtu.be/THDkVN99KZc
 
-[![Ver video: Ya cayó el biyuyo](docs/ux/demo/ya-cayo-el-biyuyo.jpg)](docs/ux/demo/ya-cayo-el-biyuyo.mp4)
+<img width="640" height="360" alt="thumbnail" src="https://github.com/user-attachments/assets/4e799bb1-e2be-4cc1-b827-6757cbf77c01" />
+
 
 **[▶ Descargar el video — Ya cayó el biyuyo (2:41)](docs/ux/demo/ya-cayo-el-biyuyo.mp4)**
 
