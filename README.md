@@ -8,10 +8,6 @@
 
 **Cobros CoDi por WhatsApp para quien vive de su oficio.** Un agente observa los chats con clientes que el comerciante elige. Cuando detecta un trabajo acordado, le pregunta en privado si quiere enviar un QR de pey con el desglose. Solo con su "sí" lo envía al cliente correcto, y avisa cuando pey confirma el pago.
 
-> **Estado:** solo diseño y plan. Todavía no hay aplicación, conexión a WhatsApp, cuentas registradas ni transacciones.
-
-![Arquitectura](docs/diagrams/arquitectura.svg)
-
 ## El problema
 
 Mecánicos, hojalateros, plomeros, electricistas y otros oficios cobran por WhatsApp: mandan una foto de su CLABE, el cliente la da de alta, transfiere y envía una captura. Después hay que cotejar las capturas contra el banco y recordar quién pagó en efectivo. El problema principal es **cobrar**, no administrar el taller.
