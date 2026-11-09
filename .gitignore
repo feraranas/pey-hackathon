@@ -43,3 +43,8 @@ __pycache__/
 
 # Approved README demo video
 !docs/ux/demo/ya-cayo-el-biyuyo.mp4
+
+# Private deployment state
+*.enc
+*.env
+backups/
