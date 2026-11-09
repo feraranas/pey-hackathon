@@ -2,7 +2,7 @@
 
 [![Ver video: Ya cayó el biyuyo](docs/ux/demo/ya-cayo-el-biyuyo.jpg)](docs/ux/demo/ya-cayo-el-biyuyo.mp4)
 
-**[▶ Ver video — Ya cayó el biyuyo (2:41)](docs/ux/demo/ya-cayo-el-biyuyo.mp4)** · Presentación del producto; no acredita un pago real ni la vinculación de WhatsApp.
+**[▶ Descargar el video — Ya cayó el biyuyo (2:41)](docs/ux/demo/ya-cayo-el-biyuyo.mp4)**
 
 # Ya cayó el biyuyo
 
