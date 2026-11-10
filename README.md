@@ -9,6 +9,8 @@
 
 # Ya cayó el biyuyo
 
+El repositorio reúne el diseño y la demo del producto. La integración del servicio desplegado al código principal está propuesta en el [PR #5](https://github.com/feraranas/pey-hackathon/pull/5). Para el alcance y las verificaciones necesarias para una entrega, consulta el [plan de entrega](docs/plan-entrega.md).
+
 **Cobros CoDi por WhatsApp para quien vive de su oficio.** Un agente observa los chats con clientes que el comerciante elige. Cuando detecta un trabajo acordado, le pregunta en privado si quiere enviar un QR de pey con el desglose. Solo con su "sí" lo envía al cliente correcto, y avisa cuando pey confirma el pago.
 
 ## El problema
