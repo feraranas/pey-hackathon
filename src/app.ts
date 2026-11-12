@@ -10,6 +10,7 @@ import { Coordinator } from "./coordinator.js";
 import { PeyClient } from "./pey.js";
 import { BaileysWhatsApp } from "./whatsapp.js";
 import { OpenAIExtractor, RuleExtractor } from "./extraction.js";
+import { createTranscriber } from "./transcription.js";
 import { RoutedWhatsApp } from "./router.js";
 import { SidecarWhatsApp } from "./sidecar.js";
 import type { Observation } from "./contracts.js";
@@ -92,6 +93,11 @@ export async function main() {
       logger.error("No se pudo mostrar el QR de vinculación");
     }
   };
+  const transcriber = createTranscriber({
+    TRANSCRIPTION_PROVIDER: config.TRANSCRIPTION_PROVIDER,
+    OPENAI_API_KEY: config.OPENAI_API_KEY,
+    TRANSCRIPTION_MODEL: config.TRANSCRIPTION_MODEL,
+  });
   const session = (
     channel: "PRODUCT" | "MERCHANT",
     ownJid: string,
@@ -100,6 +106,7 @@ export async function main() {
   ) => {
     const common = {
       session: channel,
+      ...(channel === "MERCHANT" && transcriber ? { transcriber } : {}),
       pairedAt,
       allowedJids,
       onObservation: (observation: Observation) => {

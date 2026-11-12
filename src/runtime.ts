@@ -85,6 +85,13 @@ export class Runtime {
           `report:${observation.messageId}`,
         );
       }
+      if (observation.voice === "failed") {
+        this.coordinator.notifyControl(
+          `No pude transcribir una nota de voz en el chat con ${this.coordinator.clientLabel(observation.chatJid)}. Si trae un precio, escríbelo en el chat para que lo lea.`,
+          `voice-failed:${observation.messageId}`,
+        );
+        return result;
+      }
       if (!observation.text) return result;
       this.coordinator.suspendPendingForChat(observation.chatJid);
       this.coordinator.db

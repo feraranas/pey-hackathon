@@ -62,6 +62,10 @@ type Frame struct {
 	Text     string `json:"text,omitempty"`
 	QuotedID string `json:"quotedId,omitempty"`
 	HasImage bool   `json:"hasImage,omitempty"`
+	// HasAudio marks a voice note. AudioB64 carries it when it is small enough.
+	HasAudio  bool   `json:"hasAudio,omitempty"`
+	AudioB64  string `json:"audioB64,omitempty"`
+	AudioMime string `json:"audioMime,omitempty"`
 	// ImageB64 carries an image to send, for QR charges.
 	ImageB64 string          `json:"imageB64,omitempty"`
 	Outcome  string          `json:"outcome,omitempty"`

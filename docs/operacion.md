@@ -110,3 +110,11 @@ El contenedor corre como usuario sin privilegios. Usa un volumen propio y un pro
 ## A qué cobro se liga un «Sí»
 
 Un «Sí» o «No» sin código solo se liga a un cobro cuya propuesta ya se te entregó. La app registra cuándo el servidor confirmó la entrega de cada propuesta (`prompt_seen`) y compara ese momento con la hora de tu mensaje. Si tu «Sí» salió antes de ver la propuesta vigente, por ejemplo porque el precio cambió mientras respondías, no autoriza nada y la app te pide responder otra vez. Si dos clientes esperan y viste ambos, la app pregunta cuál. Si no se pudo confirmar la entrega, el «Sí» se rechaza. Citar el mensaje de la propuesta o escribir `SI CÓDIGO` sigue identificando un cobro exacto. La hora del mensaje llega con precisión de segundos, así que una respuesta humana siempre queda después de la entrega.
+
+## Notas de voz
+
+Con `TRANSCRIPTION_PROVIDER=openai` y `OPENAI_API_KEY`, las notas de voz de los chats de clientes que lee la sesión del comerciante se transcriben en el servidor y se tratan como texto (por ejemplo, Rafa cotiza por audio y Luis acepta por escrito). El audio no se guarda: se descarga en memoria, se manda al proveedor y se descarta. Un audio de más de unos 600 KB no se transcribe. Si no hay proveedor, la transcripción falla o llega vacía, la app avisa «No pude transcribir una nota de voz» y no propone nada: escribe el precio en el chat.
+
+Las notas de voz en el chat con el número del producto nunca autorizan un cobro ni dan de alta datos, aunque la transcripción diga «Sí». Para autorizar escribe «Sí».
+
+El extractor sin OpenAI entiende separadores de miles («$1,200»), decimales, desgloses en varias líneas y correcciones del estilo «me equivoqué, el aceite sale en $1,000. Total $1,600», que descartan la propuesta anterior sin enviarla.

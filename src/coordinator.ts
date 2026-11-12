@@ -291,7 +291,12 @@ export class Coordinator {
         o.at,
         this.config.merchantId,
       );
-      if (control) converse(this, o);
+      if (control && o.voice)
+        this.notifyControl(
+          "Las notas de voz no autorizan cobros ni dan de alta datos. Escríbeme tu respuesta.",
+          `voice-control:${o.messageId}`,
+        );
+      else if (control) converse(this, o);
       return "accepted";
     })();
   }
@@ -414,8 +419,19 @@ export class Coordinator {
         FULL: "pago total",
         EXTRA: "cobro adicional",
       }[p.kind];
+      const discarded = p.orderId
+        ? (this.get(
+            "SELECT snapshot FROM intents WHERE order_id=? AND approval_state='SUPERSEDED' AND delivery_state='NONE' AND creation_state IN ('NONE','QUEUED') ORDER BY rowid DESC LIMIT 1",
+            orderId,
+          ) as { snapshot: string } | undefined)
+        : undefined;
+      const lineText = p.lines
+        .map((l) => `${l.description} $${formatPesos(l.amountCents)}`)
+        .join(" + ");
       this.control(
-        `¿Le envío a ${this.clientLabel(p.chatJid)} el cobro de $${formatPesos(p.amountCents)} MXN (${kindLabel})? ${p.lines.map((l) => `${l.description} $${formatPesos(l.amountCents)}`).join(" + ")}${p.totalCents === null ? "" : `. Total $${formatPesos(p.totalCents)}`}. Responde Sí o No.`,
+        discarded
+          ? `Actualicé el cobro de ${this.clientLabel(p.chatJid)} a $${formatPesos(p.amountCents)} MXN (${kindLabel}): ${lineText}${p.totalCents === null ? "" : `. Total $${formatPesos(p.totalCents)}`}. Descarté la cotización anterior de $${formatPesos(JSON.parse(discarded.snapshot).amountCents)}; no se envió nada. ¿Se lo envío? Responde Sí o No.`
+          : `¿Le envío a ${this.clientLabel(p.chatJid)} el cobro de $${formatPesos(p.amountCents)} MXN (${kindLabel})? ${lineText}${p.totalCents === null ? "" : `. Total $${formatPesos(p.totalCents)}`}. Responde Sí o No.`,
         `prompt:${intentId}`,
         promptId,
       );

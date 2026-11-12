@@ -13,6 +13,8 @@ const schema = z.object({
   PEY_API_KEY_ID: z.string().min(1),
   PEY_WEBHOOK_SECRET: z.string().startsWith("whsec_"),
   OPENAI_API_KEY: z.string().min(1).optional(),
+  TRANSCRIPTION_PROVIDER: z.enum(["none", "openai"]).default("none"),
+  TRANSCRIPTION_MODEL: z.string().min(1).optional(),
   OPENAI_MODEL: z.string().min(1).default("gpt-4.1-mini"),
   PUBLIC_BASE_URL: z
     .string()
@@ -33,7 +35,7 @@ const schema = z.object({
 export type Config = z.infer<typeof schema> & { allowedChatJids: string[] };
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const parsed = schema.safeParse({
-    ...env,
+    ...Object.fromEntries(Object.entries(env).filter(([, v]) => v !== "")),
     MERCHANT_JID: env.MERCHANT_JID ?? env.SELF_JID,
     MERCHANT_LID: env.MERCHANT_LID ?? env.SELF_LID,
     OPENAI_API_KEY: env.OPENAI_API_KEY || undefined,
@@ -55,6 +57,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     allowedChatJids.includes(parsed.data.PRODUCT_JID)
   )
     throw new Error("El comerciante y el producto no son chats de cliente");
+  if (
+    parsed.data.TRANSCRIPTION_PROVIDER === "openai" &&
+    !parsed.data.OPENAI_API_KEY
+  )
+    throw new Error("TRANSCRIPTION_PROVIDER=openai requiere OPENAI_API_KEY");
   for (const channel of ["PRODUCT", "MERCHANT"] as const)
     if (
       parsed.data[`${channel}_TRANSPORT`] === "whatsmeow" &&
