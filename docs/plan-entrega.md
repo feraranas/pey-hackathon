@@ -1,20 +1,42 @@
-# Plan para una entrega funcional
+# Plan de entrega: tres horas
 
-Objetivo: demostrar un cobro CoDi real y pequeño, autorizado por el comerciante, desde WhatsApp hasta su confirmación verificada. La entrega inicial usa una sesión del comerciante y su chat propio para control; el diseño de dos números es una etapa posterior.
+Objetivo: demostrar un cobro CoDi real, pequeño y autorizado, desde WhatsApp hasta el aviso de pago verificado por Pey. Tres horas son una meta, sujeta a vinculación de WhatsApp y cuenta bancaria activa.
 
-## Estado comprobado
+## Alcance y estado
 
-- El servicio y el receptor HTTPS se desplegaron en la VPS. Una petición al webhook sin firma recibió 401; falta una entrega firmada real.
-- La sesión de WhatsApp figura como no registrada. La causa del problema de vinculación con passkey todavía no está confirmada.
-- El runtime y diagnósticos están en el [PR #5](https://github.com/feraranas/pey-hackathon/pull/5), pendiente de integración en `main` al redactar este plan.
-- OpenAI y una consulta autenticada de Pey se probaron por separado; no se ha demostrado el cobro completo.
+Una sesión del comerciante; chat propio como control; chats individuales permitidos; aprobación explícita; QR fijo; webhook firmado y deduplicado; consulta a Pey y aviso de saldo. `COBRAR` es el camino mínimo; validar OpenAI después, sin bloquearlo. Dos números, audio y SaaS multiusuario quedan fuera de la primera entrega.
 
-## Orden de trabajo para hoy
+El runtime llegó a `main` en el [PR #5](https://github.com/feraranas/pey-hackathon/pull/5). La VPS puede ejecutar otra versión: verificar su digest. Baileys recibió `passkey_prologue_request` sin completar la vinculación; WhatsApp Web oficial sí funcionó. Whatsmeow soporta el intercambio pero requiere firma WebAuthn y aún no se ha probado con esta cuenta. HTTPS y el rechazo de webhook sin firma se comprobaron; el pago integral y la cuenta `ACTIVE` siguen por verificar.
 
-1. **Consolidar código:** revisar el PR #5, ejecutar la suite completa y verificar CI; integrar el runtime y dejar un procedimiento de despliegue y reversión reproducible.
-2. **WhatsApp:** ejecutar el diagnóstico aislado de la VPS y comparar con WhatsApp Web oficial. Resolver la vinculación, confirmar identidad, recepción y acuse de envío en el chat propio y el chat de prueba. Evitar borrar la sesión o reintentar envíos inciertos.
-3. **Pey:** confirmar que la cuenta receptora está `ACTIVE`, que el ID de API y el secreto corresponden a la clave configurada y que el webhook apunta al receptor HTTPS. Verificar una entrega firmada, su persistencia y deduplicación, y la consulta de la transacción por API.
-4. **Flujo completo:** con el comerciante presente, registrar la cuenta autorizada, generar y aprobar un cobro pequeño, entregarlo al cliente de prueba y confirmar el pago real. Comprobar que el aviso y saldo reflejan el pago una sola vez. Grabar la demostración sin mostrar secretos ni datos bancarios.
-5. **Entrega:** documentar versión desplegada, configuración por nombre, arranque, respaldo, recuperación y límites observados. Resolver los fallos encontrados antes de presentar el flujo como validado.
+## Cuatro frentes paralelos
 
-La fecha de hoy es el objetivo, sujeto a que la vinculación de WhatsApp, la activación de la cuenta y las respuestas de Pey permitan completar las pruebas. El soporte de dos números y las funciones opcionales quedan fuera de esta primera entrega.
+| Frente | Documento | Entregable |
+|---|---|---|
+| Whatsmeow | [01 Vinculación y sesión](plan-tres-horas/01-whatsmeow.md) | Passkey, identidad y reconexión demostradas en una sesión aislada. |
+| Adaptador | [02 Integración Node](plan-tres-horas/02-adaptador.md) | Contrato y adaptador probados con simulador y sesión real. |
+| Pey | [03 Pagos y webhook](plan-tres-horas/03-pey.md) | Cuenta y configuración comprobadas; pruebas de pago y eventos. |
+| VPS | [04 Despliegue y entrega](plan-tres-horas/04-vps-entrega.md) | Respaldo y reversión ensayados; versión, pruebas y demo. |
+
+Cada responsable usa un worktree propio, acuerda archivos y contrato antes de escribir y comparte SHA, pruebas y límites con el integrador. No poner secretos, sesiones, bases, desafíos ni datos bancarios en Git o chat.
+
+## Reloj
+
+| Tiempo | Hito |
+|---|---|
+| 0–15 min | Inventario de `main` y VPS; fijar contrato y responsables; lanzar los cuatro frentes. |
+| 15–60 min | Prototipo de passkey y adaptador simulado; pruebas Pey; preparar respaldo. Reportar evidencia a los 45 min. |
+| 60–105 min | Demostrar vinculación y reconexión; integrar adaptador y receptor. A los 90 min decidir si cuenta y WhatsApp permiten prueba real. |
+| 105–150 min | Integrar un SHA, verificar, desplegar con respaldo y realizar una transacción pequeña junto al comerciante. |
+| 150–180 min | Verificar acreditación única, aviso y saldo; grabar demo y documentar versión y límites. |
+
+Si WhatsApp o cuenta `ACTIVE` bloquean el pago a los 90 minutos, completar pruebas simuladas y documentar el bloqueo; nunca afirmar que un pago real funcionó. El comerciante participa en la aprobación, pago y grabación; no repetir pagos o envíos inciertos.
+
+## Criterios de entrega
+
+1. Sesión vinculada, identidad esperada verificada, reconexión tras reinicio y recepción/envío en chats autorizados.
+2. El comerciante revisa destinatario, importe y cuenta y aprueba una propuesta vigente antes del envío.
+3. QR real a cuenta `ACTIVE`, pago pequeño, webhook firmado persistido y transacción confirmada por API.
+4. Duplicados o reinicios no duplican la acreditación ni el aviso; incertidumbres pasan a revisión sin reintentos ciegos.
+5. Pruebas y CI del SHA desplegado; configuración, respaldo, recuperación y demostración documentados sin secretos.
+
+Registrar fecha, versión, resultado y límites por criterio. Etiquetar cualquier demostración simulada como tal.
