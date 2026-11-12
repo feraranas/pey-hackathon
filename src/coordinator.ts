@@ -1046,11 +1046,20 @@ export class Coordinator {
   completeWebhook(id: string): void {
     this.run("UPDATE webhooks SET state='DONE' WHERE id=?", id);
   }
-  payment(p: {
-    webhookId: string;
-    event: PaymentEvent;
-    transaction: Transaction;
-  }): "applied" | "duplicate" | "quarantined" {
+  /**
+   * Applies a verified transaction. A payment for a QR this app has not
+   * recorded yet (the webhook can outrun the QR creation result) is "deferred"
+   * until `final` is set, then it goes to review.
+   */
+  payment(
+    p: {
+      webhookId: string;
+      event: PaymentEvent;
+      transaction: Transaction;
+    },
+    options: { final?: boolean } = {},
+  ): "applied" | "duplicate" | "quarantined" | "deferred" {
+    const final = options.final ?? true;
     return this.db.transaction(() => {
       const { event: e, transaction: t } = p;
       if (
@@ -1077,6 +1086,7 @@ export class Coordinator {
       const snap = i && JSON.parse(i.snapshot);
       const input =
         account && this.store.decrypt<AccountInput>(account.data_enc);
+      if (!final && !i && t.status === "PAID") return "deferred";
       const valid =
         i &&
         account &&

@@ -19,6 +19,9 @@ type ChatState = {
   order_id: string | null;
   last_fingerprint: string | null;
 };
+/** A payment for an unknown QR waits this many 30 s retries before review. */
+const MAX_DEFERRALS = 10;
+
 export class Runtime {
   private running = false;
   private lastAccountPoll = 0;
@@ -153,6 +156,7 @@ export class Runtime {
       }
     }
   }
+  private readonly deferrals = new Map<string, number>();
   private async processWebhooks() {
     for (const pending of this.coordinator.pendingWebhooks()) {
       if ((this.retryAt.get(pending.id) ?? 0) > this.now()) continue;
@@ -166,14 +170,22 @@ export class Runtime {
             this.retryAt.set(pending.id, this.now() + 30_000);
             continue;
           }
-          this.coordinator.db.transaction(() => {
-            this.coordinator.payment({
-              webhookId: pending.id,
-              event,
-              transaction,
-            });
-            this.coordinator.completeWebhook(pending.id);
+          const attempts = this.deferrals.get(pending.id) ?? 0;
+          const applied = this.coordinator.db.transaction(() => {
+            const result = this.coordinator.payment(
+              { webhookId: pending.id, event, transaction },
+              { final: attempts >= MAX_DEFERRALS },
+            );
+            if (result !== "deferred")
+              this.coordinator.completeWebhook(pending.id);
+            return result;
           })();
+          if (applied === "deferred") {
+            this.deferrals.set(pending.id, attempts + 1);
+            this.retryAt.set(pending.id, this.now() + 30_000);
+            continue;
+          }
+          this.deferrals.delete(pending.id);
         } else {
           const owned = this.coordinator
             .listAccounts()

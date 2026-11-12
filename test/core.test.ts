@@ -788,3 +788,166 @@ it("starts a new order context only for an allowed chat", () => {
       .get(),
   ).toEqual({ n: 1 });
 });
+
+describe("payment truth and webhook idempotency", () => {
+  const approve = (c: Coordinator, code: string) =>
+    c.command({ kind: "approve", code, messageId: "ok-" + code });
+  const count = (s: Store, sql: string) =>
+    (s.db.prepare(sql).get() as { n: number }).n;
+
+  it("a reported receipt photo moves no money and no payment state", () => {
+    const { s, c, proposal } = setup();
+    const p = proposal();
+    approve(c, p.code);
+    qr(c, p.intentId);
+    c.reportReceipt(p.orderId, "photo-ref", "photo-msg");
+    c.reportReceipt(p.orderId, "photo-ref", "photo-msg");
+    expect(count(s, "SELECT COUNT(*) n FROM reports")).toBe(1);
+    expect(count(s, "SELECT COUNT(*) n FROM receipts")).toBe(0);
+    expect(
+      s.db
+        .prepare("SELECT payment_state ps FROM intents WHERE id=?")
+        .get(p.intentId),
+    ).toEqual({ ps: "UNPAID" });
+    expect(c.balance(p.orderId)).toMatchObject({
+      verifiedCents: 0,
+      status: "DUE",
+    });
+    expect(payment(c, p.intentId)).toBe("applied");
+    expect(c.balance(p.orderId).verifiedCents).toBe(60000);
+  });
+
+  it("replays of the same transaction under any webhook id apply once and notify once", () => {
+    const { s, c, proposal } = setup();
+    const p = proposal();
+    approve(c, p.code);
+    qr(c, p.intentId);
+    expect(c.saveWebhook("w1", { n: 1 })).toBe(true);
+    expect(c.saveWebhook("w1", { n: 1 })).toBe(false);
+    expect(payment(c, p.intentId)).toBe("applied");
+    expect(payment(c, p.intentId)).toBe("duplicate");
+    expect(
+      c.payment({
+        webhookId: "other-id",
+        event: {
+          type: "codi.qr.payment_received",
+          transactionId: "tx",
+          codiQrId: "qr-" + p.intentId,
+          bankAccountId: "bank",
+          apiKeyId: "key",
+        },
+        transaction: {
+          id: "tx",
+          status: "PAID",
+          currency: "MXN",
+          amountCents: 60000,
+          baseCents: 60000,
+          paymentMethod: "CODI",
+          payableType: "API_CODI_QR",
+          payableId: "qr-" + p.intentId,
+        },
+      }),
+    ).toBe("duplicate");
+    expect(count(s, "SELECT COUNT(*) n FROM receipts")).toBe(1);
+    expect(
+      count(s, "SELECT COUNT(*) n FROM jobs WHERE semantic_key='payment:tx'"),
+    ).toBe(1);
+    expect(c.balance(p.orderId).verifiedCents).toBe(60000);
+  });
+
+  it("a payment that outruns the QR record is deferred, then applied once the QR is known", () => {
+    const { s, c, proposal } = setup();
+    const p = proposal();
+    approve(c, p.code);
+    const event = {
+      webhookId: "wh-early",
+      event: {
+        type: "codi.qr.payment_received" as const,
+        transactionId: "early",
+        codiQrId: "qr-" + p.intentId,
+        bankAccountId: "bank",
+        apiKeyId: "key",
+      },
+      transaction: {
+        id: "early",
+        status: "PAID" as const,
+        currency: "MXN",
+        amountCents: 60000,
+        baseCents: 60000,
+        paymentMethod: "CODI",
+        payableType: "API_CODI_QR",
+        payableId: "qr-" + p.intentId,
+      },
+    };
+    expect(c.payment(event, { final: false })).toBe("deferred");
+    expect(count(s, "SELECT COUNT(*) n FROM reviews")).toBe(0);
+    expect(count(s, "SELECT COUNT(*) n FROM receipts")).toBe(0);
+    qr(c, p.intentId);
+    expect(c.payment(event, { final: false })).toBe("applied");
+    expect(c.balance(p.orderId).verifiedCents).toBe(60000);
+  });
+
+  it("an unknown QR goes to review once retries are exhausted", () => {
+    const { s, c } = setup();
+    const result = c.payment(
+      {
+        webhookId: "wh-x",
+        event: {
+          type: "codi.qr.payment_received",
+          transactionId: "tx-x",
+          codiQrId: "qr-unknown",
+          bankAccountId: "bank",
+          apiKeyId: "key",
+        },
+        transaction: {
+          id: "tx-x",
+          status: "PAID",
+          currency: "MXN",
+          amountCents: 100,
+          baseCents: 100,
+          paymentMethod: "CODI",
+          payableType: "API_CODI_QR",
+          payableId: "qr-unknown",
+        },
+      },
+      { final: true },
+    );
+    expect(result).toBe("quarantined");
+    expect(
+      count(
+        s,
+        "SELECT COUNT(*) n FROM reviews WHERE kind='PAYMENT_QUARANTINED'",
+      ),
+    ).toBe(1);
+  });
+
+  it("a wrong amount is quarantined and pays nothing", () => {
+    const { s, c, proposal } = setup();
+    const p = proposal();
+    approve(c, p.code);
+    qr(c, p.intentId);
+    const result = c.payment({
+      webhookId: "wh-bad",
+      event: {
+        type: "codi.qr.payment_received",
+        transactionId: "short",
+        codiQrId: "qr-" + p.intentId,
+        bankAccountId: "bank",
+        apiKeyId: "key",
+      },
+      transaction: {
+        id: "short",
+        status: "PAID",
+        currency: "MXN",
+        amountCents: 1000,
+        baseCents: 1000,
+        paymentMethod: "CODI",
+        payableType: "API_CODI_QR",
+        payableId: "qr-" + p.intentId,
+      },
+    });
+    expect(result).toBe("quarantined");
+    expect(c.balance(p.orderId).verifiedCents).toBe(0);
+    expect(count(s, "SELECT COUNT(*) n FROM receipts")).toBe(0);
+  });
+});
