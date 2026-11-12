@@ -39,7 +39,7 @@ export function buildSummary(
   const today = dayKey(options.now, timeZone);
   const intents = c.db
     .prepare(
-      "SELECT i.* FROM intents i JOIN orders o ON o.id=i.order_id WHERE o.merchant_id=? ORDER BY i.rowid",
+      "SELECT i.*, i.rowid AS rowid FROM intents i JOIN orders o ON o.id=i.order_id WHERE o.merchant_id=? ORDER BY i.rowid",
     )
     .all(c.config.merchantId) as Row[];
   const lines: string[] = [];
@@ -54,6 +54,17 @@ export function buildSummary(
     );
     if (!open && (shown === undefined || dayKey(shown, timeZone) !== today))
       continue;
+    if (status === "SUPERSEDED") {
+      // A charge replaced by an identical one is not a discarded quote.
+      const later = intents.find(
+        (j) =>
+          j.order_id === i.order_id &&
+          j.rowid > i.rowid &&
+          JSON.parse(j.snapshot).amountCents ===
+            JSON.parse(i.snapshot).amountCents,
+      );
+      if (later) continue;
+    }
     const name = c.clientLabel(i.recipient);
     const amount = JSON.parse(i.snapshot).amountCents as number;
     const money = `$${formatPesos(amount)}`;

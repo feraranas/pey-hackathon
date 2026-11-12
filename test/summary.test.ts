@@ -52,4 +52,19 @@ describe("merchant summary", () => {
     expect(h.sent(/Cobros de hoy/)).toHaveLength(1);
     expect(buildSummary(h.c, { now: clock.t })).toContain("Ana");
   });
+
+  it("a client message re-asks the same charge without calling it a price change or a discarded quote", async () => {
+    const clock = { t: now };
+    const h = harness(clock);
+    await h.activate();
+    await h.quote(ana, 1200);
+    await h.chat(ana, false, "Sí, mándamelo");
+    expect(h.sent(/¿Le envío a Ana el cobro de \$1,200\.00/)).toHaveLength(2);
+    expect(h.sent(/Descarté la cotización anterior/)).toHaveLength(0);
+    clock.t += 1000;
+    await h.product("Sí");
+    await h.product("resumen");
+    const text = h.sent(/Cobros de hoy/).at(-1)!.text;
+    expect(text).not.toContain("descartada");
+  });
 });

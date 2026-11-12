@@ -44,6 +44,7 @@ Ver el [flujo completo en pantallas](docs/ux/README.md) (maquetas ilustrativas c
 | [docs/integraciones.md](docs/integraciones.md) | Contratos verificados de pey (8 nov 2026), webhooks, Baileys, OpenAI, versiones y pendientes |
 | [docs/decisiones.md](docs/decisiones.md) | Alternativas comparadas y razones |
 | [docs/diagramas.md](docs/diagramas.md) | Arquitectura, flujo de extremo a extremo y cuatro diagramas de estado |
+| [docs/demo.md](docs/demo.md) | Guía para jueces: `npm run demo:story`, qué es real y qué es simulado, y la salida completa |
 | [docs/ux/README.md](docs/ux/README.md) | Flujo en 17 maquetas: alta con el número del producto, Rafa con su agente, dos clientes y el checkout CoDi (datos ficticios) |
 
 ## Stack sugerido
@@ -76,9 +77,20 @@ Nunca se versionan secretos: la API key de pey, el secreto del webhook, la clave
 
 # Aplicación y guía de operación
 
+## Inicio rápido
+
+```bash
+npm ci
+npm run demo:story   # la historia de Rafa, Ana y Luis contra el sandbox local, con 17 comprobaciones
+npm run local        # tú escribes como Rafa y como sus clientes
+npm run verify       # formato, tipos, pruebas, demos y enlaces
+```
+
+La [guía para jueces](docs/demo.md) explica qué es real y qué es simulado. Sin credenciales de pey ni un número de WhatsApp vinculado, todo corre contra el sandbox y WhatsApp simulado.
+
 Un coordinador de cobros para comerciantes: detecta acuerdos en chats autorizados, propone un cobro, exige aprobación del dueño y envía un QR CoDi de Pey. Un pago solo se acredita después de recibir un webhook firmado y consultar la API de Pey.
 
-> **Estado al 8 de noviembre de 2026:** aplicación y despliegue implementados; la vinculación real de WhatsApp sigue bloqueada. No se ha validado un pago de extremo a extremo. `/health` y HTTPS funcionando no significan que el negocio esté listo para cobrar.
+> **Estado al 11 de noviembre de 2026:** el flujo completo corre y está probado contra un sandbox local de pey con WhatsApp simulado (ver [Entrega](docs/entrega.md)). Falta vincular los números reales de WhatsApp y probar un pago real con una cuenta activa de pey. `/health` y HTTPS funcionando no significan que el negocio esté listo para cobrar.
 
 ## Arquitectura del código actual
 

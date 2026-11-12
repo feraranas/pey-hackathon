@@ -425,11 +425,17 @@ export class Coordinator {
             orderId,
           ) as { snapshot: string } | undefined)
         : undefined;
+      // A re-ask with identical lines and amount is not a price change.
+      const sameAsDiscarded =
+        discarded &&
+        JSON.parse(discarded.snapshot).amountCents === p.amountCents &&
+        JSON.stringify(JSON.parse(discarded.snapshot).lines) ===
+          JSON.stringify(p.lines);
       const lineText = p.lines
         .map((l) => `${l.description} $${formatPesos(l.amountCents)}`)
         .join(" + ");
       this.control(
-        discarded
+        discarded && !sameAsDiscarded
           ? `Actualicé el cobro de ${this.clientLabel(p.chatJid)} a $${formatPesos(p.amountCents)} MXN (${kindLabel}): ${lineText}${p.totalCents === null ? "" : `. Total $${formatPesos(p.totalCents)}`}. Descarté la cotización anterior de $${formatPesos(JSON.parse(discarded.snapshot).amountCents)}; no se envió nada. ¿Se lo envío? Responde Sí o No.`
           : `¿Le envío a ${this.clientLabel(p.chatJid)} el cobro de $${formatPesos(p.amountCents)} MXN (${kindLabel})? ${lineText}${p.totalCents === null ? "" : `. Total $${formatPesos(p.totalCents)}`}. Responde Sí o No.`,
         `prompt:${intentId}`,
