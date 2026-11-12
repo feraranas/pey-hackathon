@@ -69,6 +69,8 @@ export type Observation = {
   text: string;
   quotedMessageId?: string;
   imageRef?: string;
+  /** Set for voice notes. «failed» means there is no text to read. */
+  voice?: "transcribed" | "failed";
 };
 export type Delivery = {
   channel: Channel;

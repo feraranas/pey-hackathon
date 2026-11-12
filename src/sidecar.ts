@@ -1,3 +1,4 @@
+import { transcribeVoice, type TranscriberPort } from "./transcription.js";
 import { createConnection, type Socket } from "node:net";
 import QRCode from "qrcode";
 import {
@@ -23,6 +24,9 @@ type Frame = {
   text?: string;
   quotedId?: string;
   hasImage?: boolean;
+  hasAudio?: boolean;
+  audioB64?: string;
+  audioMime?: string;
   outcome?: string;
   detail?: string;
   version?: string;
@@ -48,6 +52,8 @@ export type SidecarOptions = {
   onPairingQr?: (qr: string) => void;
   onPasskeyRequest?: (publicKey: unknown) => void;
   onPasskeyCode?: (code: string) => void;
+  /** Turns voice notes into text. Without one, voice notes are marked failed. */
+  transcriber?: TranscriberPort;
   onError: (error: unknown) => void;
 };
 
@@ -269,7 +275,27 @@ export class SidecarWhatsApp implements WhatsAppPort {
     const chatJid = candidates.find((jid) => jid && allowed.has(jid));
     const at = Number(frame.at);
     if (!chatJid || !Number.isFinite(at) || at < this.options.pairedAt) return;
-    if (!frame.text && !frame.hasImage) return;
+    if (!frame.text && !frame.hasImage && !frame.hasAudio) return;
+    if (frame.hasAudio) {
+      const base = {
+        session: this.options.session,
+        chatJid,
+        messageId: frame.id,
+        fromMe: !!frame.fromMe,
+        at,
+        ...(frame.quotedId ? { quotedMessageId: frame.quotedId } : {}),
+      };
+      this.enqueue(async () => {
+        const observation = await transcribeVoice(
+          base,
+          frame.audioB64 ? Buffer.from(frame.audioB64, "base64") : undefined,
+          frame.audioMime ?? "audio/ogg",
+          this.options.transcriber,
+        );
+        this.dispatch(observation, chatJid);
+      });
+      return;
+    }
     const observation: Observation = {
       session: this.options.session,
       chatJid,
@@ -280,6 +306,9 @@ export class SidecarWhatsApp implements WhatsAppPort {
       ...(frame.quotedId ? { quotedMessageId: frame.quotedId } : {}),
       ...(frame.hasImage ? { imageRef: frame.id } : {}),
     };
+    this.dispatch(observation, chatJid);
+  }
+  private dispatch(observation: Observation, chatJid: string) {
     if (observation.fromMe)
       this.enqueue(() => this.options.onEcho(observation.messageId, chatJid));
     if (this.options.session !== "PRODUCT" || this.verifiedDelivery)

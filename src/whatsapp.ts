@@ -5,6 +5,7 @@ import makeWASocket, {
   BufferJSON,
   Browsers,
   DisconnectReason,
+  downloadMediaMessage,
   initAuthCreds,
   jidNormalizedUser,
   proto,
@@ -12,6 +13,7 @@ import makeWASocket, {
   type WASocket,
 } from "baileys";
 import pino from "pino";
+import { transcribeVoice, type TranscriberPort } from "./transcription.js";
 import QRCode from "qrcode";
 import {
   RemoteFailure,
@@ -88,7 +90,7 @@ export function parseObservation(
     content.extendedTextMessage?.text ??
     content.imageMessage?.caption ??
     "";
-  if (!text && !content.imageMessage) return null;
+  if (!text && !content.imageMessage && !content.audioMessage) return null;
   return {
     session: options.session,
     chatJid,
@@ -100,6 +102,7 @@ export function parseObservation(
       ? { quotedMessageId: content.extendedTextMessage.contextInfo.stanzaId }
       : {}),
     ...(content.imageMessage ? { imageRef: messageId } : {}),
+    ...(content.audioMessage && !text ? { voice: "failed" as const } : {}),
   };
 }
 
@@ -198,6 +201,7 @@ export type WhatsAppOptions = {
   onConnectionDiagnostic?: (
     diagnostic: ReturnType<typeof connectionDiagnostic>,
   ) => void;
+  transcriber?: TranscriberPort;
   onError: (error: unknown) => void;
 };
 export class BaileysWhatsApp implements WhatsAppPort {
@@ -324,28 +328,25 @@ export class BaileysWhatsApp implements WhatsAppPort {
           pairedAt: this.options.pairedAt,
         });
         if (!observation) continue;
-        if (observation.fromMe)
-          this.ack(observation.messageId, observation.chatJid);
-        const isControl = this.options.session === "PRODUCT";
-        if (observation.fromMe)
-          this.enqueue(() =>
-            this.options.onEcho(observation.messageId, observation.chatJid),
-          );
-        if (!isControl || this.verifiedDelivery)
-          this.enqueue(() => this.options.onObservation(observation));
-        else if (!this.bufferOverflow) {
-          if (
-            this.controlBuffer.length >=
-            (this.options.controlBufferLimit ?? 1000)
-          ) {
-            this.bufferOverflow = true;
-            this.options.onError?.(
-              new Error(
-                "WhatsApp control buffer overflow; restart and review missed messages",
+        if (observation.voice && this.options.transcriber) {
+          const { voice: _voice, text: _text, ...base } = observation;
+          const transcriber = this.options.transcriber;
+          this.enqueue(async () => {
+            const audio = await downloadMediaMessage(raw, "buffer", {}).catch(
+              () => undefined,
+            );
+            this.dispatchObservation(
+              await transcribeVoice(
+                base,
+                audio,
+                raw.message?.audioMessage?.mimetype ?? "audio/ogg",
+                transcriber,
               ),
             );
-          } else this.controlBuffer.push(observation);
+          });
+          continue;
         }
+        this.dispatchObservation(observation);
       }
     });
     socket.ev.on("messages.update", (updates) => {
@@ -361,6 +362,29 @@ export class BaileysWhatsApp implements WhatsAppPort {
           this.ack(update.key.id, normalizeJid(update.key.remoteJid));
       }
     });
+  }
+  private dispatchObservation(observation: Observation): void {
+    if (observation.fromMe)
+      this.ack(observation.messageId, observation.chatJid);
+    const isControl = this.options.session === "PRODUCT";
+    if (observation.fromMe)
+      this.enqueue(() =>
+        this.options.onEcho(observation.messageId, observation.chatJid),
+      );
+    if (!isControl || this.verifiedDelivery)
+      this.enqueue(() => this.options.onObservation(observation));
+    else if (!this.bufferOverflow) {
+      if (
+        this.controlBuffer.length >= (this.options.controlBufferLimit ?? 1000)
+      ) {
+        this.bufferOverflow = true;
+        this.options.onError?.(
+          new Error(
+            "WhatsApp control buffer overflow; restart and review missed messages",
+          ),
+        );
+      } else this.controlBuffer.push(observation);
+    }
   }
   private allowed(): string[] {
     const { allowedJids } = this.options;

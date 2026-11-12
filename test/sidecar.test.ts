@@ -1,3 +1,4 @@
+import { FakeTranscriber } from "../src/transcription.js";
 import { mkdtempSync, rmSync } from "node:fs";
 import { createServer, type Server, type Socket } from "node:net";
 import { tmpdir } from "node:os";
@@ -293,5 +294,54 @@ describe("pairing", () => {
       "passkey_confirm",
       "passkey_cancel",
     ]);
+  });
+
+  it("turns a voice note into text through the transcriber, never storing audio", async () => {
+    const transcriber = new FakeTranscriber("aceite $900, total $900");
+    const { seen } = await open("MERCHANT", { transcriber });
+    fake!.emit(
+      message({
+        id: "v1",
+        text: undefined,
+        fromMe: true,
+        hasAudio: true,
+        audioMime: "audio/ogg; codecs=opus",
+        audioB64: Buffer.from("opus-bytes").toString("base64"),
+      }),
+    );
+    await tick();
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toMatchObject({
+      messageId: "v1",
+      text: "aceite $900, total $900",
+      voice: "transcribed",
+      fromMe: true,
+    });
+    expect(transcriber.calls).toEqual([
+      { bytes: 10, mimeType: "audio/ogg; codecs=opus" },
+    ]);
+  });
+  it("marks a voice note failed when there is no transcriber, no audio, or the provider throws", async () => {
+    const failing = {
+      transcribe: async () => {
+        throw new Error("provider down SECRET");
+      },
+    };
+    for (const [overrides, frame] of [
+      [{}, { audioB64: "AAAA" }],
+      [{ transcriber: new FakeTranscriber("x") }, {}],
+      [{ transcriber: failing }, { audioB64: "AAAA" }],
+    ] as const) {
+      const { seen, errors } = await open("MERCHANT", overrides);
+      fake!.emit(
+        message({ id: "v2", text: undefined, hasAudio: true, ...frame }),
+      );
+      await tick();
+      expect(seen).toHaveLength(1);
+      expect(seen[0]).toMatchObject({ text: "", voice: "failed" });
+      expect(errors.join()).not.toContain("SECRET");
+      await adapter!.stop();
+      await fake!.close();
+    }
   });
 });

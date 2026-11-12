@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,6 +21,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	_ "modernc.org/sqlite"
 )
+
+// MaxAudioBytes caps the voice notes forwarded to Node (frames are 1 MiB).
+const MaxAudioBytes = 600 * 1024
 
 // WhatsmeowBackend adapts a whatsmeow client to Backend.
 type WhatsmeowBackend struct {
@@ -216,8 +220,20 @@ func (b *WhatsmeowBackend) handle(emit func(Frame), evt any) {
 		case m.GetImageMessage() != nil:
 			f.Text = m.GetImageMessage().GetCaption()
 			f.HasImage = true
+		case m.GetAudioMessage() != nil:
+			f.HasAudio = true
+			a := m.GetAudioMessage()
+			f.AudioMime = a.GetMimetype()
+			if a.GetFileLength() > 0 && a.GetFileLength() <= MaxAudioBytes {
+				ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+				data, err := b.cli.Download(ctx, a)
+				cancel()
+				if err == nil && len(data) <= MaxAudioBytes {
+					f.AudioB64 = base64.StdEncoding.EncodeToString(data)
+				}
+			}
 		}
-		if f.Text == "" && !f.HasImage {
+		if f.Text == "" && !f.HasImage && !f.HasAudio {
 			return
 		}
 		emit(f)
