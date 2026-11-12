@@ -108,7 +108,12 @@ export function parsePesos(value: string | number): number {
 }
 export function formatPesos(value: number): string {
   if (!Number.isSafeInteger(value)) throw new Error("Invalid cents");
-  return `${value < 0 ? "-" : ""}${Math.floor(Math.abs(value) / 100)}.${String(Math.abs(value) % 100).padStart(2, "0")}`;
+  return `${value < 0 ? "-" : ""}${Math.floor(Math.abs(value) / 100)
+    .toString()
+    .replace(
+      /\B(?=(\d{3})+(?!\d))/g,
+      ",",
+    )}.${String(Math.abs(value) % 100).padStart(2, "0")}`;
 }
 export class RemoteFailure extends Error {
   constructor(

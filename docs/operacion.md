@@ -118,3 +118,18 @@ Con `TRANSCRIPTION_PROVIDER=openai` y `OPENAI_API_KEY`, las notas de voz de los 
 Las notas de voz en el chat con el número del producto nunca autorizan un cobro ni dan de alta datos, aunque la transcripción diga «Sí». Para autorizar escribe «Sí».
 
 El extractor sin OpenAI entiende separadores de miles («$1,200»), decimales, desgloses en varias líneas y correcciones del estilo «me equivoqué, el aceite sale en $1,000. Total $1,600», que descartan la propuesta anterior sin enviarla.
+
+## Resumen del día
+
+Escribe «resumen», «¿cómo voy?» o «cobros de hoy» al número del producto. La respuesta separa lo confirmado por pey de lo que sigue pendiente y de lo descartado:
+
+```text
+*Cobros de hoy*
+✅ Ana · $1,200.00
+✅ Luis · $1,600.00
+Cotización anterior de Luis ($1,500.00): descartada, no se envió
+*Confirmado por pey: $2,800.00*
+Pendiente por cobrar: $0.00
+```
+
+Un comprobante en foto aparece como 📎 «reportado» y no suma a lo confirmado. «Hoy» es el día local de `SUMMARY_TIMEZONE` (por defecto `America/Mexico_City`) según cuándo se te mostró cada propuesta; lo que sigue abierto aparece aunque sea de otro día. Con `SUMMARY_HOUR=20` la app además lo envía una vez al día después de las 20:00 si hay algo que decir.

@@ -1,3 +1,4 @@
+import { buildSummary } from "./summary.js";
 import { createHash } from "node:crypto";
 import type { Logger } from "pino";
 import {
@@ -40,6 +41,8 @@ export class Runtime {
       now?: () => number;
       logger?: Logger;
       canDeliver?: () => boolean;
+      /** Send the day's summary once, after this local hour. */
+      dailySummary?: { hour: number; timeZone?: string };
     } = {},
   ) {
     coordinator.db.exec(`
@@ -118,6 +121,7 @@ export class Runtime {
     this.running = true;
     try {
       this.coordinator.tick(this.now());
+      this.sendDailySummary();
       await this.processWebhooks();
       await this.pollAccounts();
       await this.reconcileCharges();
@@ -162,6 +166,27 @@ export class Runtime {
         );
       }
     }
+  }
+  private sendDailySummary() {
+    const config = this.options.dailySummary;
+    if (!config) return;
+    const timeZone = config.timeZone ?? "America/Mexico_City";
+    const at = new Date(this.now());
+    const hour = Number(
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone,
+        hour: "2-digit",
+        hourCycle: "h23",
+      }).format(at),
+    );
+    if (hour < config.hour) return;
+    const day = new Intl.DateTimeFormat("en-CA", { timeZone }).format(at);
+    const key = `daily-summary:${day}`;
+    const text = buildSummary(this.coordinator, {
+      now: at.getTime(),
+      timeZone,
+    });
+    if (text) this.coordinator.notifyControl(text, key);
   }
   private readonly deferrals = new Map<string, number>();
   private async processWebhooks() {

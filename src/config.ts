@@ -30,6 +30,8 @@ const schema = z.object({
   MERCHANT_SIDECAR_SOCKET: z.string().min(1).optional(),
   WHATSAPP_PAIRING_MODE: z.enum(["qr", "code"]).default("qr"),
   ALLOWED_CHAT_JIDS: z.string().default(""),
+  SUMMARY_HOUR: z.coerce.number().int().min(0).max(23).optional(),
+  SUMMARY_TIMEZONE: z.string().min(1).default("America/Mexico_City"),
   EXTRACTION_DELAY_MS: z.coerce.number().int().min(0).default(30_000),
 });
 export type Config = z.infer<typeof schema> & { allowedChatJids: string[] };
