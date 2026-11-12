@@ -296,6 +296,26 @@ describe("pairing", () => {
     ]);
   });
 
+  it("asks for a phone linking code and surfaces the answer or the refusal", async () => {
+    const codes: string[] = [];
+    const errors: string[] = [];
+    await open("PRODUCT", {
+      onPairCode: (c) => void codes.push(c),
+      onPairCodeError: (d) => void errors.push(d),
+    });
+    adapter!.requestPairCode("5215550000001");
+    await tick();
+    expect(fake!.received.at(-1)).toMatchObject({
+      t: "pair_phone",
+      to: "5215550000001",
+    });
+    fake!.emit({ t: "pair_code", code: "AAAA-BBBB" });
+    fake!.emit({ t: "pair_code_error", detail: "not connected" });
+    await tick();
+    expect(codes).toEqual(["AAAA-BBBB"]);
+    expect(errors).toEqual(["not connected"]);
+  });
+
   it("turns a voice note into text through the transcriber, never storing audio", async () => {
     const transcriber = new FakeTranscriber("aceite $900, total $900");
     const { seen } = await open("MERCHANT", { transcriber });

@@ -48,4 +48,14 @@ node --import tsx scripts/pair-qr.ts /run/pey/product/wa.sock 527715697632@s.wha
 
 Abre el PNG justo antes de escanear (WhatsApp → Dispositivos vinculados → Vincular un dispositivo). Si lo escaneas tarde, vuelve a abrir el mismo archivo. El PNG y el almacén `wa.db` son secretos: no los versiones ni los compartas.
 
+### Vincular con un código en vez del QR
+
+Un QR de 20 segundos es difícil de pasar por un chat. Con dos argumentos más, `pair-qr.ts` también pide a WhatsApp un código de 8 caracteres y lo escribe, con su hora de creación, en un archivo `0600`:
+
+```bash
+node --import tsx scripts/pair-qr.ts /run/pey/product/wa.sock 527715697632@s.whatsapp.net /ruta/qr.png 527715697632 /ruta/codigo.txt
+```
+
+En el teléfono, WhatsApp → Dispositivos vinculados → Vincular un dispositivo → «Vincular con el número de teléfono». Para un código nuevo, `kill -USR1 <pid de pair-qr>`; el anterior deja de servir. El sidecar solo pide código para el número esperado. El QR sigue activo y el que se complete primero vincula. El código es un secreto de vinculación: no lo imprimas ni lo pegues en chats, y el script lo borra al vincular. Si la cuenta tiene passkey, WhatsApp la pide después y ese paso es humano.
+
 Los números de México tienen dos escrituras, `52` más diez dígitos y `521` más diez dígitos. El sidecar y el adaptador tratan ambas como el mismo número al verificar la identidad. Al enviar a un cliente, usa el JID que WhatsApp devuelva para él.
