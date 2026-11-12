@@ -11,6 +11,8 @@ import { PeyClient } from "./pey.js";
 import { BaileysWhatsApp } from "./whatsapp.js";
 import { OpenAIExtractor, RuleExtractor } from "./extraction.js";
 import { RoutedWhatsApp } from "./router.js";
+import { SidecarWhatsApp } from "./sidecar.js";
+import type { Observation } from "./contracts.js";
 import { Runtime } from "./runtime.js";
 import { createServer } from "./server.js";
 
@@ -95,9 +97,51 @@ export async function main() {
     ownJid: string,
     allowedJids: string[] | (() => string[]),
     authFile: string,
-  ) =>
-    new BaileysWhatsApp({
+  ) => {
+    const common = {
       session: channel,
+      pairedAt,
+      allowedJids,
+      onObservation: (observation: Observation) => {
+        runtime.accept(observation);
+      },
+      onEcho: (messageId: string, chatJid: string) =>
+        coordinator.markDeliveryEcho(messageId, chatJid),
+      onIdentity: (jids: string[]) => {
+        logger.info(
+          { channel, identityCount: jids.length },
+          "Sesión de WhatsApp identificada",
+        );
+        if (channel === "PRODUCT") {
+          coordinator.bindSelfJids(merchantJids);
+          coordinator.notifyControl(
+            "Verificando el canal de cobros. Si recibes este mensaje, escríbeme «hola» para empezar.",
+            `session-probe:${randomUUID()}`,
+          );
+        }
+      },
+      onPairingQr: pairingPrinter(channel),
+      onError: (error: unknown) =>
+        logger.error({ err: error, channel }, "Error de WhatsApp"),
+    };
+    if (config[`${channel}_TRANSPORT`] === "whatsmeow")
+      return new SidecarWhatsApp({
+        ...common,
+        socketPath: config[`${channel}_SIDECAR_SOCKET`]!,
+        expectedOwnJids: [ownJid],
+        onPasskeyRequest: () =>
+          logger.warn(
+            { channel },
+            "WhatsApp pide una passkey: paso humano pendiente (ver docs/plan-tres-horas/01-whatsmeow.md)",
+          ),
+        onPasskeyCode: () =>
+          logger.warn(
+            { channel },
+            "Hay un código de comparación de vinculación pendiente",
+          ),
+      });
+    return new BaileysWhatsApp({
+      ...common,
       onConnectionDiagnostic: (diagnostic) => {
         logger.info(
           { channel, ...diagnostic },
@@ -115,31 +159,9 @@ export async function main() {
       },
       authPath: join(config.DATA_DIR, authFile),
       encryptionKey: Buffer.from(config.SESSION_ENCRYPTION_KEY, "hex"),
-      allowedJids,
       expectedOwnJids: [ownJid],
-      pairedAt,
-      onObservation: (observation) => {
-        runtime.accept(observation);
-      },
-      onEcho: (messageId, chatJid) =>
-        coordinator.markDeliveryEcho(messageId, chatJid),
-      onIdentity: (jids) => {
-        logger.info(
-          { channel, identityCount: jids.length },
-          "Sesión de WhatsApp identificada",
-        );
-        if (channel === "PRODUCT") {
-          coordinator.bindSelfJids(merchantJids);
-          coordinator.notifyControl(
-            "Verificando el canal de cobros. Si recibes este mensaje, escríbeme «hola» para empezar.",
-            `session-probe:${randomUUID()}`,
-          );
-        }
-      },
-      onPairingQr: pairingPrinter(channel),
-      onError: (error) =>
-        logger.error({ err: error, channel }, "Error de WhatsApp"),
     });
+  };
   const productSession = session(
     "PRODUCT",
     config.PRODUCT_JID,

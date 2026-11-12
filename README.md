@@ -144,7 +144,7 @@ npm run build
 node --env-file=/ruta/privada/pey.env dist/src/app.js
 ```
 
-Escanea desde **WhatsApp → Dispositivos vinculados**. Los QR y códigos de vinculación son privados. El servicio verifica la identidad de las dos sesiones y envía una comprobación desde el número del producto al comerciante antes de habilitar comandos; nunca usa el chat del comerciante consigo mismo. Consulta la [guía de operación](docs/operacion.md) y el [despliegue en VPS](infra/pey/README.md).
+Escanea desde **WhatsApp → Dispositivos vinculados**. Los QR y códigos de vinculación son privados. El servicio verifica la identidad de las dos sesiones y envía una comprobación desde el número del producto al comerciante antes de habilitar comandos; nunca usa el chat del comerciante consigo mismo. Consulta la [guía de operación](docs/operacion.md), el [sidecar de Whatsmeow](docs/whatsmeow-sidecar.md) y el [despliegue en VPS](infra/pey/README.md).
 
 ## Cómo se cobra
 

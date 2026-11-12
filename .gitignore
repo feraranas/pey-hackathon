@@ -48,3 +48,4 @@ __pycache__/
 *.enc
 *.env
 backups/
+sidecar/sidecar
