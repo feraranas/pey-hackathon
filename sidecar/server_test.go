@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"net"
 	"os"
 	"path/filepath"
@@ -32,6 +33,12 @@ func (f *fakeBackend) PasskeyResponse(json.RawMessage) error {
 }
 func (f *fakeBackend) PasskeyConfirm() error { return nil }
 func (f *fakeBackend) PasskeyCancel()        {}
+func (f *fakeBackend) PairPhone(_ context.Context, phone string) (string, error) {
+	if phone != "527715697632" {
+		return "", errors.New("number does not match the expected number")
+	}
+	return "ABCD-EFGH", nil
+}
 func (f *fakeBackend) Send(ctx context.Context, r SendRequest) (string, string) {
 	f.mu.Lock()
 	f.sends = append(f.sends, r)
@@ -277,5 +284,21 @@ func TestCanonPNFoldsMexicoSpellings(t *testing.T) {
 		if got := canonPN(in); got != want {
 			t.Errorf("canonPN(%s)=%s want %s", in, got, want)
 		}
+	}
+}
+
+func TestPairPhoneReturnsCodeOnlyForTheExpectedNumber(t *testing.T) {
+	_, path, stop := start(t, &fakeBackend{})
+	defer stop()
+	c := dial(t, path)
+	c.next(t)
+	c.next(t)
+	c.send(t, Frame{V: 1, T: TPairPhone, To: "527715697632"})
+	if f := c.next(t); f.T != TPairCode || f.Code != "ABCD-EFGH" {
+		t.Fatalf("%+v", f)
+	}
+	c.send(t, Frame{V: 1, T: TPairPhone, To: "525500000000"})
+	if f := c.next(t); f.T != TPairCodeError || f.Code != "" {
+		t.Fatalf("%+v", f)
 	}
 }

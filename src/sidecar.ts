@@ -18,6 +18,7 @@ type Frame = {
   ref?: string;
   id?: string;
   chat?: string;
+  to?: string;
   chatAlt?: string;
   fromMe?: boolean;
   at?: number;
@@ -52,6 +53,9 @@ export type SidecarOptions = {
   onPairingQr?: (qr: string) => void;
   onPasskeyRequest?: (publicKey: unknown) => void;
   onPasskeyCode?: (code: string) => void;
+  /** The 8-character code that links the number from the phone. A pairing secret. */
+  onPairCode?: (code: string) => void;
+  onPairCodeError?: (detail: string) => void;
   /** Turns voice notes into text. Without one, voice notes are marked failed. */
   transcriber?: TranscriberPort;
   onError: (error: unknown) => void;
@@ -240,6 +244,12 @@ export class SidecarWhatsApp implements WhatsAppPort {
       case "passkey_code":
         if (frame.code) this.options.onPasskeyCode?.(frame.code);
         return;
+      case "pair_code":
+        if (frame.code) this.options.onPairCode?.(frame.code);
+        return;
+      case "pair_code_error":
+        this.options.onPairCodeError?.(frame.detail ?? "unknown");
+        return;
       case "protocol_error":
       case "passkey_error":
         this.fail(new Error(`Sidecar reported ${frame.t}`));
@@ -384,6 +394,10 @@ export class SidecarWhatsApp implements WhatsAppPort {
       for (const observation of this.buffer.splice(0))
         this.enqueue(() => this.options.onObservation(observation));
     }
+  }
+  /** Asks for a linking code for this phone number (digits, international form). */
+  requestPairCode(phone: string) {
+    this.write({ t: "pair_phone", to: phone });
   }
   sendPasskeyResponse(payload: unknown) {
     this.write({ t: "passkey_response", payload });
