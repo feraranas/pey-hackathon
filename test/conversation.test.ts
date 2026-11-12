@@ -265,6 +265,10 @@ describe("router", () => {
     await router.deliver({ ...d, channel: "PRODUCT" });
     await router.deliver({ ...d, channel: "MERCHANT" });
     expect([a.deliveries.length, b.deliveries.length]).toEqual([1, 1]);
+    const legacy = { ...d } as Parameters<typeof router.deliver>[0];
+    await router.deliver(legacy);
+    await router.deliver({ ...legacy, qrString: "qr" });
+    expect([a.deliveries.length, b.deliveries.length]).toEqual([2, 2]);
   });
 });
 

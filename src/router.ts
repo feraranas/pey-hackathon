@@ -8,6 +8,8 @@ export class RoutedWhatsApp implements WhatsAppPort {
     return Object.values(this.sessions).every((s) => s.ready !== false);
   }
   deliver(item: Delivery): Promise<void> {
-    return this.sessions[item.channel].deliver(item);
+    const channel: Channel =
+      item.channel ?? (item.qrString ? "MERCHANT" : "PRODUCT");
+    return this.sessions[channel].deliver(item);
   }
 }
