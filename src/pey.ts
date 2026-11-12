@@ -241,6 +241,24 @@ export class PeyClient implements PeyPort {
       throw new RemoteFailure("Invalid Pey transaction amount", false);
     }
   }
+  /** Read-only: ids of the payments received through this API key, newest first. */
+  async listApiKeyTransactions(nextToken?: string) {
+    if (nextToken !== undefined) nonempty.parse(nextToken);
+    const query =
+      nextToken === undefined ? "" : `?${new URLSearchParams({ nextToken })}`;
+    const page = this.parse(
+      z.object({
+        items: z.array(z.object({ id: nonempty })),
+        nextToken: nonempty.nullable().optional(),
+      }),
+      await this.request(`/transaction/api-key${query}`, "GET"),
+      false,
+    );
+    return {
+      ids: page.items.map((item) => item.id),
+      ...(page.nextToken ? { nextToken: page.nextToken } : {}),
+    };
+  }
   async listQrTransactions(id: string, nextToken?: string) {
     nonempty.parse(id);
     if (nextToken !== undefined) nonempty.parse(nextToken);

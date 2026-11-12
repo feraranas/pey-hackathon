@@ -17,6 +17,7 @@
     "demo:story": "node --import tsx src/story-demo.ts",
     "backup": "node --import tsx src/backup.ts",
     "verify": "npm run format:check && npm run check && npm test && npm run build && npm run demo && npm run demo:story && python3 scripts/check-links.py",
+    "pey:smoke": "node --import tsx scripts/pey-smoke.ts",
     "check:integrations": "node --import tsx scripts/check-integrations.ts",
     "format:check": "prettier --check src test scripts/check-integrations.ts vitest.config.ts tsconfig.json package.json .github/workflows/ci.yml"
   },
