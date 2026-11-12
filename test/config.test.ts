@@ -65,4 +65,26 @@ describe("configuration and secret boundaries", () => {
       "PRODUCT_JID",
     );
   });
+  it("requires a sidecar socket for the whatsmeow transport", () => {
+    const base = {
+      DATA_DIR: "/tmp/x",
+      SESSION_ENCRYPTION_KEY: "a".repeat(64),
+      PEY_API_KEY: "k",
+      PEY_API_KEY_ID: "id",
+      PEY_WEBHOOK_SECRET: "whsec_x",
+      PUBLIC_BASE_URL: "https://example.test",
+      MERCHANT_JID: "5215550000001@s.whatsapp.net",
+      PRODUCT_JID: "5215550000009@s.whatsapp.net",
+    };
+    expect(() =>
+      loadConfig({ ...base, MERCHANT_TRANSPORT: "whatsmeow" }),
+    ).toThrow("MERCHANT_SIDECAR_SOCKET");
+    expect(
+      loadConfig({
+        ...base,
+        MERCHANT_TRANSPORT: "whatsmeow",
+        MERCHANT_SIDECAR_SOCKET: "/run/pey/merchant.sock",
+      }).MERCHANT_TRANSPORT,
+    ).toBe("whatsmeow");
+  });
 });

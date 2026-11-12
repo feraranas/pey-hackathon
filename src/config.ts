@@ -22,6 +22,10 @@ const schema = z.object({
   MERCHANT_JID: z.string().regex(/^\d+@s\.whatsapp\.net$/),
   MERCHANT_LID: z.string().optional(),
   PRODUCT_JID: z.string().regex(/^\d+@s\.whatsapp\.net$/),
+  PRODUCT_TRANSPORT: z.enum(["baileys", "whatsmeow"]).default("baileys"),
+  MERCHANT_TRANSPORT: z.enum(["baileys", "whatsmeow"]).default("baileys"),
+  PRODUCT_SIDECAR_SOCKET: z.string().min(1).optional(),
+  MERCHANT_SIDECAR_SOCKET: z.string().min(1).optional(),
   WHATSAPP_PAIRING_MODE: z.enum(["qr", "code"]).default("qr"),
   ALLOWED_CHAT_JIDS: z.string().default(""),
   EXTRACTION_DELAY_MS: z.coerce.number().int().min(0).default(30_000),
@@ -51,6 +55,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     allowedChatJids.includes(parsed.data.PRODUCT_JID)
   )
     throw new Error("El comerciante y el producto no son chats de cliente");
+  for (const channel of ["PRODUCT", "MERCHANT"] as const)
+    if (
+      parsed.data[`${channel}_TRANSPORT`] === "whatsmeow" &&
+      !parsed.data[`${channel}_SIDECAR_SOCKET`]
+    )
+      throw new Error(
+        `${channel}_SIDECAR_SOCKET es obligatorio con ${channel}_TRANSPORT=whatsmeow`,
+      );
   if (parsed.data.MERCHANT_JID === parsed.data.PRODUCT_JID)
     throw new Error(
       "El número del producto debe ser distinto del WhatsApp del comerciante",
