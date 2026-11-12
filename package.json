@@ -13,6 +13,7 @@
     "test": "vitest run",
     "check": "tsc --noEmit",
     "demo": "node --import tsx src/demo.ts",
+    "local": "node --import tsx src/local.ts",
     "backup": "node --import tsx src/backup.ts",
     "verify": "npm run format:check && npm run check && npm test && npm run build && npm run demo && python3 scripts/check-links.py",
     "check:integrations": "node --import tsx scripts/check-integrations.ts",

@@ -111,7 +111,24 @@ npm run build
 npm run demo
 ```
 
-La demo usa proveedores simulados. No demuestra conectividad con WhatsApp ni confirma pagos reales. Para verificar también formato y enlaces: `npm run verify`.
+La demo usa proveedores simulados. No demuestra conectividad con WhatsApp ni confirma pagos reales.
+
+### Aplicación completa en local (`npm run local`)
+
+Arranca el coordinador, el runtime, el servidor de webhooks y el `PeyClient` reales. El cliente habla por HTTP con un sandbox de pey (`src/pey-sandbox.ts`) que firma webhooks con Standard Webhooks, y WhatsApp se simula en consola. No toca WhatsApp ni mueve dinero. Comandos: `p <texto>` (el comerciante al número del producto), `r <cliente> <texto>` (el comerciante en el chat del cliente), `c <cliente> <texto>` (el cliente), `foto <cliente>`, `activar` (pey activa la cuenta), `pagar` (el cliente paga el último QR), `salir`.
+
+```text
+p hola → alias → nombre legal → CLABE → física
+p Sí, autorizo          # registra la cuenta en el sandbox (PENDING, aviso de 5 días hábiles)
+p agrega a Ana 5215550000002
+activar                 # webhook bank.account.updated → ACTIVE
+r Ana Ana, balatas 800 y mano de obra 400, total 1200. Anticipo 600.
+c Ana Va                # el producto pregunta: ¿Le envío a Ana…? Responde Sí o No.
+p Sí                    # QR por el chat del comerciante
+pagar                   # webhook firmado → «Recibiste $600.00 de Ana (verificado por pey)»
+```
+
+`test/e2e.test.ts` ejecuta ese recorrido por HTTP real, reenvía el webhook sin duplicar el aviso y comprueba que un webhook sin firma válida se rechaza. Para verificar también formato y enlaces: `npm run verify`.
 
 ## Configurar el servicio real
 
