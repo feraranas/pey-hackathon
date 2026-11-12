@@ -26,7 +26,7 @@ cd sidecar && go build -o sidecar . && go test ./...
 ./sidecar -socket /run/pey/merchant/wa.sock -db /var/lib/pey/merchant-wa.db -number 5215550000001
 ```
 
-`SIDECAR_DEBUG_EVENTS=1` imprime solo los nombres de los tipos de evento de Whatsmeow, nunca contenidos. La base SQLite del dispositivo queda en `0600`; Whatsmeow no la cifra, así que la VPS debe cifrar el disco o el volumen y un solo proceso debe escribirla.
+`SIDECAR_DEBUG_EVENTS=1` imprime solo los nombres de los tipos de evento de Whatsmeow, nunca contenidos. La base SQLite del dispositivo queda en `0600`; Whatsmeow no la cifra, así que la VPS debe cifrar el disco o el volumen ([guía](cifrado-en-reposo.md)) y un solo proceso debe escribirla.
 
 Para verificar el apretón de manos sin enviar nada: `node --import tsx scripts/sidecar-smoke.ts /run/pey/merchant/wa.sock 5215550000001@s.whatsapp.net`.
 
