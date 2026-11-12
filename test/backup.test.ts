@@ -9,7 +9,8 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Store } from "../src/store.js";
-import { backup } from "../src/backup.js";
+import Database from "better-sqlite3";
+import { backup, verifyBackup } from "../src/backup.js";
 import { lockDataDirectory } from "../src/lifecycle.js";
 
 describe("persistent service lifecycle", () => {
@@ -45,6 +46,28 @@ describe("persistent service lifecycle", () => {
       Buffer.from([1, 2, 3, 4]),
     );
     restored.close();
+    rmSync(root, { recursive: true });
+  });
+  it("backs up Whatsmeow device stores and verifies every database", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pey-backup-"));
+    const source = join(root, "data"),
+      target = join(root, "snapshot");
+    mkdirSync(source);
+    new Store(join(source, "pey.sqlite"), "separate-secret").close();
+    const device = new Database(join(source, "merchant-wa.db"));
+    device.pragma("journal_mode = WAL");
+    device.exec("CREATE TABLE d(v TEXT); INSERT INTO d VALUES('keys')");
+    // The writer stays open, as a running sidecar would.
+    await backup(source, target);
+    device.close();
+    expect(verifyBackup(target)).toEqual(["pey.sqlite", "merchant-wa.db"]);
+    const copy = new Database(join(target, "merchant-wa.db"), {
+      readonly: true,
+    });
+    expect(copy.prepare("SELECT v FROM d").get()).toEqual({ v: "keys" });
+    copy.close();
+    writeFileSync(join(target, "pey.sqlite"), "not a database");
+    expect(() => verifyBackup(target)).toThrow();
     rmSync(root, { recursive: true });
   });
 });

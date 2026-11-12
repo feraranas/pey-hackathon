@@ -1,0 +1,64 @@
+# Transporte Whatsmeow: la app y un sidecar por sesión comparten un volumen de
+# sockets. Los tres procesos usan el usuario `node` (uid 1000) porque los
+# sockets son 0600. Solo la app publica un puerto, y solo en 127.0.0.1.
+# Antes del primer arranque: `docker compose build` y llena el archivo de
+# entorno privado indicado en `env_file` (no se versiona).
+x-common: &common
+  image: pey-hackathon:reviewed
+  build:
+    context: .
+    dockerfile: Dockerfile.verify
+  restart: unless-stopped
+  init: true
+  stop_grace_period: 120s
+  logging:
+    driver: none
+  read_only: true
+  tmpfs: [/tmp]
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+
+services:
+  merchant-sidecar:
+    <<: *common
+    command:
+      - pey-sidecar
+      - -socket=/run/pey/merchant/wa.sock
+      - -db=/data/merchant-wa.db
+      - -number=${MERCHANT_NUMBER:?número del comerciante, solo dígitos}
+    volumes:
+      - pey-data:/data
+      - merchant-run:/run/pey/merchant
+  product-sidecar:
+    <<: *common
+    command:
+      - pey-sidecar
+      - -socket=/run/pey/product/wa.sock
+      - -db=/data/product-wa.db
+      - -number=${PRODUCT_NUMBER:?número del producto, solo dígitos}
+    volumes:
+      - pey-data:/data
+      - product-run:/run/pey/product
+  app:
+    <<: *common
+    depends_on: [merchant-sidecar, product-sidecar]
+    env_file: /etc/pey-hackathon/pey.env
+    environment:
+      DATA_DIR: /data
+      HOST: 0.0.0.0
+      PORT: "3000"
+      PRODUCT_TRANSPORT: whatsmeow
+      MERCHANT_TRANSPORT: whatsmeow
+      PRODUCT_SIDECAR_SOCKET: /run/pey/product/wa.sock
+      MERCHANT_SIDECAR_SOCKET: /run/pey/merchant/wa.sock
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - pey-data:/data
+      - merchant-run:/run/pey/merchant
+      - product-run:/run/pey/product
+
+volumes:
+  pey-data:
+  merchant-run:
+  product-run:
