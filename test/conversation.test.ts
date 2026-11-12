@@ -1,87 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { Store } from "../src/store.js";
-import { Coordinator } from "../src/coordinator.js";
-import { Runtime } from "../src/runtime.js";
+import { harness, merchant, ana, luis, now } from "./harness.js";
 import { RuleExtractor } from "../src/extraction.js";
 import { RoutedWhatsApp } from "../src/router.js";
-import { SimulatedPey, SimulatedWhatsApp } from "../src/simulation.js";
+import { SimulatedWhatsApp } from "../src/simulation.js";
 import type { Observation } from "../src/contracts.js";
-
-const merchant = "5215550000001@s.whatsapp.net",
-  ana = "5215550000002@s.whatsapp.net",
-  luis = "5215550000003@s.whatsapp.net";
-const now = 1_800_000_000_000;
-
-function harness() {
-  const store = new Store(":memory:", "k");
-  const c = new Coordinator(store, {
-    merchantId: "m",
-    selfJids: [merchant],
-    controlChatJid: merchant,
-    pairedAt: now - 1000,
-    now: () => now,
-  });
-  const pey = new SimulatedPey(),
-    wa = new SimulatedWhatsApp();
-  const runtime = new Runtime(
-    c,
-    { pey, whatsapp: wa, extractor: new RuleExtractor() },
-    { debounceMs: 0, now: () => now },
-  );
-  let n = 0;
-  const product = async (text: string, extra: Partial<Observation> = {}) => {
-    const r = runtime.accept({
-      session: "PRODUCT",
-      chatJid: merchant,
-      messageId: `p${++n}`,
-      fromMe: false,
-      at: now,
-      text,
-      ...extra,
-    });
-    await runtime.step();
-    return r;
-  };
-  const chat = async (
-    jid: string,
-    fromMe: boolean,
-    text: string,
-    extra: Partial<Observation> = {},
-  ) => {
-    runtime.accept({
-      session: "MERCHANT",
-      chatJid: jid,
-      messageId: `c${++n}`,
-      fromMe,
-      at: now,
-      text,
-      ...extra,
-    });
-    await runtime.step();
-  };
-  const sent = (re: RegExp) => wa.deliveries.filter((d) => re.test(d.text));
-  const activate = async () => {
-    await product("hola");
-    for (const a of [
-      "Taller Rafa",
-      "Rafael Ortiz",
-      "646180157034432952",
-      "física",
-    ])
-      await product(a);
-    await product("Sí, autorizo");
-    const account = c.listAccounts()[0]!;
-    pey.accounts.get(account.providerId!)!.status = "ACTIVE";
-    c.updateAccount(account.id, "ACTIVE");
-    await product("agrega a Ana 5215550000002");
-    await product("agrega a Luis 5215550000003");
-  };
-  const quote = async (jid: string, total: number) => {
-    await chat(jid, true, `balatas ${total}, total ${total}.`);
-    await chat(jid, false, "Va");
-  };
-  return { c, pey, wa, runtime, product, chat, sent, activate, quote, store };
-}
 
 describe("product number is the only control channel", () => {
   it("never reads the merchant's own chat, other senders or the product's echoes as commands", async () => {
