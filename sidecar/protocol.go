@@ -19,6 +19,8 @@ const (
 	TPasskeyReq    = "passkey_request"
 	TPasskeyCode   = "passkey_code"
 	TPasskeyError  = "passkey_error"
+	TPairCode      = "pair_code"
+	TPairCodeError = "pair_code_error"
 	TOverflow      = "overflow"
 	TProtocolError = "protocol_error"
 )
@@ -29,6 +31,7 @@ const (
 	TPasskeyResponse = "passkey_response"
 	TPasskeyConfirm  = "passkey_confirm"
 	TPasskeyCancel   = "passkey_cancel"
+	TPairPhone       = "pair_phone"
 )
 
 // Send outcomes. "acked" is a WhatsApp server acknowledgement, never a

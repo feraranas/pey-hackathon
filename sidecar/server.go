@@ -30,6 +30,8 @@ type Backend interface {
 	PasskeyResponse(payload json.RawMessage) error
 	PasskeyConfirm() error
 	PasskeyCancel()
+	// PairPhone asks WhatsApp for an 8-character linking code for the expected number.
+	PairPhone(ctx context.Context, phone string) (string, error)
 }
 
 // Server speaks NDJSON over a Unix socket with permissions 0600. One Node
@@ -210,6 +212,8 @@ func (s *Server) handle(ctx context.Context, nc net.Conn) {
 			}
 		case TPasskeyCancel:
 			s.backend.PasskeyCancel()
+		case TPairPhone:
+			go s.pairPhone(ctx, c, f)
 		default:
 			e := frame(TProtocolError)
 			e.Detail = "unknown frame type"
@@ -263,4 +267,21 @@ func (s *Server) send(ctx context.Context, c *conn, f Frame) {
 		result.Outcome, result.Detail = OutcomeUncertain, fmt.Sprint("backend returned no outcome")
 	}
 	_ = c.write(result)
+}
+
+// pairPhone answers a pair_phone request. The code is a pairing secret: it goes
+// only to the connected client and is never kept or logged here.
+func (s *Server) pairPhone(ctx context.Context, c *conn, f Frame) {
+	cctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	code, err := s.backend.PairPhone(cctx, f.To)
+	if err != nil {
+		e := frame(TPairCodeError)
+		e.Detail = err.Error()
+		_ = c.write(e)
+		return
+	}
+	out := frame(TPairCode)
+	out.Code = code
+	_ = c.write(out)
 }

@@ -304,3 +304,30 @@ func (b *WhatsmeowBackend) PasskeyCancel() {
 	b.mu.Unlock()
 	b.cli.Disconnect()
 }
+
+var errPairPhone = errors.New("pairing code unavailable")
+
+// PairPhone requests a linking code for the expected number only. The QR
+// channel keeps running; whichever the user completes first links the device.
+func (b *WhatsmeowBackend) PairPhone(ctx context.Context, phone string) (string, error) {
+	digits := strings.Map(func(r rune) rune {
+		if r >= '0' && r <= '9' {
+			return r
+		}
+		return -1
+	}, phone)
+	if canonPN(digits) != canonPN(b.expectPN) {
+		return "", errors.New("number does not match the expected number")
+	}
+	if b.cli.Store.ID != nil {
+		return "", errors.New("already linked")
+	}
+	if !b.cli.IsConnected() {
+		return "", errors.New("not connected to WhatsApp yet")
+	}
+	code, err := b.cli.PairPhone(ctx, digits, true, whatsmeow.PairClientChrome, "Chrome (Linux)")
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", errPairPhone, err)
+	}
+	return code, nil
+}
