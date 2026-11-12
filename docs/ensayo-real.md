@@ -10,6 +10,12 @@ Lista ordenada para el primer cobro real. Nada de esto se ha ejecutado: necesita
 - [ ] El volumen de datos está cifrado ([guía](cifrado-en-reposo.md)).
 - [ ] Monto acordado, menor de $20 MXN, y un cliente que sea el propio comerciante o una persona que sabe que es una prueba.
 
+## 0.5 · Prueba de solo lectura
+
+`npm run pey:smoke` usa las claves del entorno y no crea QR, no registra cuentas y no mueve dinero. Comprueba que pey acepta la clave (`GET /transaction/api-key`, se espera 200), que el secreto del webhook firma y verifica en local, y con `PUBLIC_BASE_URL` que el endpoint rechaza un POST sin firma (401). Con `PEY_BANK_ACCOUNT_ID` también consulta el estado de esa cuenta (`GET /bank-account/{id}`) y enmascara la CLABE. pey no ofrece un listado de cuentas: el ID sale del portal o del alta.
+
+La clave que se probó el 11 de noviembre de 2026 funciona en `api.pey.mx` (producción) y la rechaza `api.dev.pey.mx` (403). Es una clave real: cualquier QR que se cree con ella cobra dinero real.
+
 ## 1 · pey
 
 - [ ] URL del webhook en pey: `https://hooks.ferarana.work/webhooks/pey`, con los eventos `codi.qr.payment_received` y `bank.account.updated`.

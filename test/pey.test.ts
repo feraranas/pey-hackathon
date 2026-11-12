@@ -258,6 +258,36 @@ describe("PeyClient", () => {
   });
 });
 
+describe("PeyClient read-only key listing", () => {
+  it("lists payment ids with a GET and no body", async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(response({ items: [{ id: "a" }], nextToken: null }));
+    const client = new PeyClient({ apiKey: "key", fetch: fetcher });
+    expect(await client.listApiKeyTransactions()).toEqual({ ids: ["a"] });
+    const [url, init] = fetcher.mock.calls[0]!;
+    expect(url).toBe("https://api.pey.mx/transaction/api-key");
+    expect(init!.method).toBe("GET");
+    expect(init!.body).toBeUndefined();
+  });
+  it("rejects a malformed page and reports a rejected key without uncertainty", async () => {
+    const bad = new PeyClient({
+      apiKey: "key",
+      fetch: vi.fn<typeof fetch>().mockResolvedValue(response({ items: 3 })),
+    });
+    await expect(bad.listApiKeyTransactions()).rejects.toThrow(RemoteFailure);
+    const forbidden = new PeyClient({
+      apiKey: "key",
+      fetch: vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(response({ message: "no" }, 403)),
+    });
+    await expect(forbidden.listApiKeyTransactions()).rejects.toMatchObject({
+      uncertain: false,
+    });
+  });
+});
+
 describe("verifyPeyWebhook", () => {
   const secret = `whsec_${Buffer.from("a sufficiently long webhook secret").toString("base64")}`;
   const signer = new Webhook(secret);
