@@ -11,6 +11,8 @@ import type {
 } from "./contracts.js";
 import { cents, formatPesos, parsePesos } from "./contracts.js";
 import { Store } from "./store.js";
+import { converse } from "./conversation.js";
+import { validClabe } from "./clabe.js";
 
 type Row = Record<string, any>;
 type Line = { description: string; amountCents: number };
@@ -31,6 +33,7 @@ export type Command =
       kind: "approve" | "reject";
       code?: string | null;
       quotedPromptId?: string | null;
+      clientName?: string | null;
       messageId: string;
     }
   | { kind: "onboarding_data"; input: AccountInput; messageId: string }
@@ -50,17 +53,6 @@ const uid = () => randomUUID();
 const hash = (value: string) =>
   createHash("sha256").update(value).digest("hex");
 const code = () => randomBytes(4).toString("hex").toUpperCase();
-const validClabe = (value: string) =>
-  /^\d{18}$/.test(value) &&
-  (10 -
-    ([...value.slice(0, 17)].reduce(
-      (sum, digit, index) =>
-        sum + ((Number(digit) * [3, 7, 1][index % 3]!) % 10),
-      0,
-    ) %
-      10)) %
-    10 ===
-    Number(value[17]);
 const linesMatch = (lines: Line[], total: number | null) => {
   let sum = 0;
   for (const line of lines) {
@@ -151,10 +143,10 @@ export class Coordinator {
       }
     })();
   }
-  private get(sql: string, ...args: any[]): Row | undefined {
+  get(sql: string, ...args: any[]): Row | undefined {
     return this.db.prepare(sql).get(...args) as Row | undefined;
   }
-  private run(sql: string, ...args: any[]) {
+  run(sql: string, ...args: any[]) {
     return this.db.prepare(sql).run(...args);
   }
   private enqueue(
@@ -184,6 +176,7 @@ export class Coordinator {
       "deliver",
       semantic,
       {
+        channel: "PRODUCT",
         id: uid(),
         recipientJid: this.config.controlChatJid,
         messageId,
@@ -270,15 +263,12 @@ export class Coordinator {
         this.get("SELECT id FROM jobs WHERE message_id=?", o.messageId)
       )
         return "ignored";
-      const control = this.config.selfJids.includes(o.chatJid);
+      const merchantChat = this.config.selfJids.includes(o.chatJid);
+      const control = o.session === "PRODUCT";
       if (control) {
-        if (
-          !o.fromMe ||
-          !this.config.selfJids.includes(o.chatJid) ||
-          this.get("SELECT id FROM jobs WHERE message_id=?", o.messageId)
-        )
-          return "ignored";
+        if (o.fromMe || !merchantChat) return "ignored";
       } else if (
+        merchantChat ||
         !this.get(
           "SELECT jid FROM chats WHERE merchant_id=? AND jid=?",
           this.config.merchantId,
@@ -298,166 +288,7 @@ export class Coordinator {
         o.at,
         this.config.merchantId,
       );
-      if (control) {
-        const text = o.text.trim();
-        let m: RegExpMatchArray | null;
-        if ((m = text.match(/^(?:SI|SÍ|NO)(?:\s+([A-Z0-9]+))?$/i)))
-          this.command({
-            kind: /^NO/i.test(text) ? "reject" : "approve",
-            code: m[1]?.toUpperCase(),
-            quotedPromptId: o.quotedMessageId,
-            messageId: o.messageId,
-          });
-        else if ((m = text.match(/^REPROPONER\s+([A-Z0-9]+)$/i)))
-          this.command({
-            kind: "repropose",
-            code: m[1]!.toUpperCase(),
-            messageId: o.messageId,
-          });
-        else if ((m = text.match(/^ACEPTO\s+([A-Z0-9]+)$/i)))
-          this.command({
-            kind: "consent",
-            code: m[1]!.toUpperCase(),
-            messageId: o.messageId,
-          });
-        else if (
-          (m = text.match(
-            /^ALTA\s+(.+?)\s*\|\s*(.+?)\s*\|\s*(\d{18})\s*\|\s*(PERSON|BUSINESS)$/i,
-          ))
-        )
-          this.command({
-            kind: "onboarding_data",
-            input: {
-              alias: m[1]!,
-              name: m[2]!,
-              clabe: m[3]!,
-              entity: m[4]!.toUpperCase() as "PERSON" | "BUSINESS",
-            },
-            messageId: o.messageId,
-          });
-        else if ((m = text.match(/^EFECTIVO\s+(\S+)\s+(\d+(?:\.\d{1,2})?)$/i)))
-          this.command({
-            kind: "cash",
-            orderId: m[1]!,
-            amountCents: parsePesos(m[2]!),
-            messageId: o.messageId,
-          });
-        else if (
-          (m = text.match(/^TOTAL\s+(\S+)\s+(UNKNOWN|\d+(?:\.\d{1,2})?)$/i))
-        )
-          this.command({
-            kind: "set_total",
-            orderId: m[1]!,
-            totalCents:
-              m[2]!.toUpperCase() === "UNKNOWN" ? null : parsePesos(m[2]!),
-            messageId: o.messageId,
-          });
-        else if ((m = text.match(/^NUEVA\s+(\S+)$/i))) {
-          const chat = m[1]!;
-          if (
-            !this.get(
-              "SELECT jid FROM chats WHERE merchant_id=? AND jid=?",
-              this.config.merchantId,
-              chat,
-            )
-          )
-            this.notifyControl(
-              "Ese chat no está permitido.",
-              `new-order-invalid:${o.messageId}`,
-            );
-          else {
-            this.suspendPendingForChat(chat);
-            this.notifyControl(
-              `Nueva orden en ${chat}; escribe el nuevo acuerdo en ese chat.`,
-              `new-order:${o.messageId}`,
-            );
-          }
-        } else if (
-          (m = text.match(
-            /^COBRAR\s+([^|]+)\|\s*([^|]+)\|\s*(\d+(?:\.\d{1,2})?)\s*\|\s*(UNKNOWN|\d+(?:\.\d{1,2})?)$/i,
-          ))
-        ) {
-          const accounts = this.listAccounts().filter(
-            (a) => a.status === "ACTIVE" && a.providerId,
-          );
-          const chat = m[1]!.trim(),
-            concept = m[2]!.trim();
-          if (
-            accounts.length !== 1 ||
-            !this.get(
-              "SELECT jid FROM chats WHERE merchant_id=? AND jid=?",
-              this.config.merchantId,
-              chat,
-            )
-          )
-            this.notifyControl(
-              "Se necesita un chat permitido y una sola cuenta activa para cobrar.",
-              `manual-rejected:${o.messageId}`,
-            );
-          else {
-            try {
-              const amount = parsePesos(m[3]!),
-                total =
-                  m[4]!.toUpperCase() === "UNKNOWN" ? null : parsePesos(m[4]!);
-              this.propose({
-                chatJid: chat,
-                lines: [{ description: concept, amountCents: total ?? amount }],
-                totalCents: total,
-                amountCents: amount,
-                kind: total === amount ? "FULL" : "EXTRA",
-                evidence: [o.messageId],
-                expiresAt: this.now() + 86400000,
-                accountId: accounts[0]!.id,
-              });
-            } catch {
-              this.notifyControl(
-                "No pude crear el cobro. Revisa el importe y el total.",
-                `manual-invalid:${o.messageId}`,
-              );
-            }
-          }
-        } else if ((m = text.match(/^SALDO\s+(\S+)\s+(\d+(?:\.\d{1,2})?)$/i))) {
-          const order = this.get(
-            "SELECT * FROM orders WHERE id=? AND merchant_id=?",
-            m[1]!,
-            this.config.merchantId,
-          );
-          if (!order)
-            this.notifyControl(
-              "No encontré esa orden.",
-              `balance-invalid:${o.messageId}`,
-            );
-          else {
-            const version = this.get(
-              "SELECT * FROM versions WHERE order_id=? AND revision=?",
-              order.id,
-              order.revision,
-            )!;
-            try {
-              this.propose({
-                orderId: order.id,
-                chatJid: order.chat_jid,
-                accountId: order.account_id,
-                lines: JSON.parse(version.lines),
-                totalCents: version.total,
-                amountCents: parsePesos(m[2]!),
-                kind: "BALANCE",
-                evidence: [o.messageId],
-                expiresAt: this.now() + 86400000,
-              });
-            } catch {
-              this.notifyControl(
-                "No pude crear el cobro de saldo.",
-                `balance-invalid:${o.messageId}`,
-              );
-            }
-          }
-        } else
-          this.notifyControl(
-            "Comandos: NUEVA chat; ALTA alias | nombre | CLABE | PERSON o BUSINESS; ACEPTO código; COBRAR chat | concepto | importe | total o UNKNOWN; SALDO orden importe; EFECTIVO orden importe; TOTAL orden importe o UNKNOWN; SI código; NO código; REPROPONER código.",
-            `help:${o.messageId}`,
-          );
-      }
+      if (control) converse(this, o);
       return "accepted";
     })();
   }
@@ -574,8 +405,14 @@ export class Coordinator {
         "UNPAID",
         promptId,
       );
+      const kindLabel = {
+        DEPOSIT: "anticipo",
+        BALANCE: "saldo",
+        FULL: "pago total",
+        EXTRA: "cobro adicional",
+      }[p.kind];
       this.control(
-        `Cobro ${intentCode} · orden ${orderId} · ${p.chatJid} · ${p.kind} $${formatPesos(p.amountCents)} MXN · total ${p.totalCents === null ? "desconocido" : "$" + formatPesos(p.totalCents)} · ${p.lines.map((l) => `${l.description} $${formatPesos(l.amountCents)}`).join(" + ")}. Responde SI ${intentCode} o cita este mensaje con sí.`,
+        `¿Le envío a ${this.clientLabel(p.chatJid)} el cobro de $${formatPesos(p.amountCents)} MXN (${kindLabel})? ${p.lines.map((l) => `${l.description} $${formatPesos(l.amountCents)}`).join(" + ")}${p.totalCents === null ? "" : `. Total $${formatPesos(p.totalCents)}`}. Responde Sí o No.`,
         `prompt:${intentId}`,
         promptId,
       );
@@ -710,7 +547,7 @@ export class Coordinator {
           null,
         );
         this.control(
-          `Confirma ${c.input.alias} · ${c.input.name} · CLABE ****${c.input.clabe.slice(-4)} · ${c.input.entity}. ${text} Responde ACEPTO ${consentCode}.`,
+          `Confirma tus datos: ${c.input.alias} · ${c.input.name} · CLABE ****${c.input.clabe.slice(-4)} · ${c.input.entity === "PERSON" ? "persona física" : "persona moral"}. ${text} La activación puede tardar hasta cinco días hábiles. Responde «Sí, autorizo» para registrar la cuenta.`,
           `consent:${consentId}`,
         );
         return "accepted";
@@ -859,26 +696,48 @@ export class Coordinator {
         this.revise(c.orderId, { lines, totalCents: c.totalCents });
         return "accepted";
       }
+      let i: Row | undefined;
       if (!c.code && !c.quotedPromptId) {
-        this.control(
-          "Indica el código o cita el mensaje del cobro. ",
-          `clarify:${c.messageId}`,
-        );
-        return "clarification";
+        const open = this.openProposals();
+        const wanted = c.clientName?.trim().toLowerCase();
+        const matching = wanted
+          ? open.filter((p) =>
+              this.clientLabel(p.recipient).toLowerCase().includes(wanted),
+            )
+          : open;
+        if (!open.length) {
+          this.notifyControl(
+            "No tengo ningún cobro pendiente de tu aprobación.",
+            `no-open:${c.messageId}`,
+          );
+          return "rejected";
+        }
+        if (matching.length !== 1) {
+          this.control(
+            `¿Cuál cobro? ${open.map((p) => `${this.clientLabel(p.recipient)} $${formatPesos(JSON.parse(p.snapshot).amountCents)}`).join(" o ")}. Responde «${c.kind === "reject" ? "No" : "Sí"}, el de ${this.clientLabel(open[0]!.recipient)}» o cita el mensaje del cobro.`,
+            `clarify:${c.messageId}`,
+          );
+          return "clarification";
+        }
+        i = matching[0];
+      } else {
+        const byCode = c.code
+          ? this.get("SELECT * FROM intents WHERE code=?", c.code)
+          : undefined;
+        const byQuote = c.quotedPromptId
+          ? this.get(
+              "SELECT * FROM intents WHERE prompt_id=?",
+              c.quotedPromptId,
+            )
+          : undefined;
+        if (
+          (c.code && !byCode) ||
+          (c.quotedPromptId && !byQuote) ||
+          (byCode && byQuote && byCode.id !== byQuote.id)
+        )
+          return "clarification";
+        i = byCode ?? byQuote;
       }
-      const byCode = c.code
-        ? this.get("SELECT * FROM intents WHERE code=?", c.code)
-        : undefined;
-      const byQuote = c.quotedPromptId
-        ? this.get("SELECT * FROM intents WHERE prompt_id=?", c.quotedPromptId)
-        : undefined;
-      if (
-        (c.code && !byCode) ||
-        (c.quotedPromptId && !byQuote) ||
-        (byCode && byQuote && byCode.id !== byQuote.id)
-      )
-        return "clarification";
-      const i = byCode ?? byQuote;
       if (
         !i ||
         i.approval_state !== "PROPOSED" ||
@@ -975,6 +834,53 @@ export class Coordinator {
       );
       return "accepted";
     })();
+  }
+  openProposals(): Row[] {
+    return this.db
+      .prepare(
+        `SELECT i.* FROM intents i JOIN orders o ON o.id=i.order_id WHERE o.merchant_id=? AND i.approval_state='PROPOSED' AND i.expires_at>? ORDER BY i.rowid`,
+      )
+      .all(this.config.merchantId, this.now()) as Row[];
+  }
+  clientLabel(jid: string): string {
+    const row = this.get(
+      "SELECT name FROM clients WHERE merchant_id=? AND jid=?",
+      this.config.merchantId,
+      jid,
+    );
+    return row?.name ?? jid.split("@")[0]!;
+  }
+  addClient(jid: string, name: string): void {
+    this.allowChat(jid);
+    this.run(
+      "INSERT INTO clients VALUES(?,?,?) ON CONFLICT(merchant_id,jid) DO UPDATE SET name=excluded.name",
+      this.config.merchantId,
+      jid,
+      name,
+    );
+  }
+  removeClient(jid: string): void {
+    this.suspendPendingForChat(jid);
+    this.run(
+      "DELETE FROM chats WHERE merchant_id=? AND jid=?",
+      this.config.merchantId,
+      jid,
+    );
+    this.run(
+      "DELETE FROM clients WHERE merchant_id=? AND jid=?",
+      this.config.merchantId,
+      jid,
+    );
+  }
+  listClients(): { jid: string; name: string }[] {
+    return this.db
+      .prepare(
+        "SELECT c.jid, COALESCE(k.name, c.jid) AS name FROM chats c LEFT JOIN clients k ON k.merchant_id=c.merchant_id AND k.jid=c.jid WHERE c.merchant_id=?",
+      )
+      .all(this.config.merchantId) as { jid: string; name: string }[];
+  }
+  currentTime(): number {
+    return this.now();
   }
   notifyControl(text: string, semanticKey: string): void {
     if (!this.get("SELECT id FROM jobs WHERE semantic_key=?", semanticKey))
@@ -1218,7 +1124,7 @@ export class Coordinator {
         );
       const b = this.balance(i.order_id);
       this.control(
-        `Recibiste $${formatPesos(t.baseCents)} por ${i.code} (verificado por pey). Verificado $${formatPesos(b.verifiedCents)} · efectivo registrado $${formatPesos(b.cashCents)} · falta ${b.pendingCents === null ? "desconocido" : "$" + formatPesos(b.pendingCents)}.${flags.length ? " Requiere revisión: " + flags.join(", ") : ""}`,
+        `Recibiste $${formatPesos(t.baseCents)} de ${this.clientLabel(i.recipient)} (verificado por pey). Verificado $${formatPesos(b.verifiedCents)} · efectivo registrado $${formatPesos(b.cashCents)} · falta ${b.pendingCents === null ? "desconocido" : "$" + formatPesos(b.pendingCents)}.${flags.length ? " Requiere revisión: " + flags.join(", ") : ""}`,
         `payment:${t.id}`,
       );
       return "applied";
@@ -1428,6 +1334,7 @@ export class Coordinator {
         );
         const messageId = uid();
         const delivery: Delivery = {
+          channel: "MERCHANT",
           id: uid(),
           recipientJid: i.recipient,
           messageId,
@@ -1453,7 +1360,7 @@ export class Coordinator {
           this.config.merchantId,
         );
         this.control(
-          "Cuenta registrada. La activación puede tardar hasta cinco días hábiles.",
+          "Cuenta registrada en pey. La activación puede tardar hasta cinco días hábiles; te aviso cuando esté activa. Mientras tanto agrega los clientes cuyos chats quieres que lea, por ejemplo «agrega a Ana 5215550000002».",
           `account:${payload.accountId}:registered`,
         );
       } else if (job.intent_id)

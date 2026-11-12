@@ -91,3 +91,78 @@ export class OpenAIExtractor implements ExtractorPort {
     return validateCandidateFacts(response.output_parsed, messages);
   }
 }
+
+const AGREEMENT =
+  /^\s*[¡!]?\s*(?:va|sí|si|ok|okey|dale|de acuerdo|está bien|esta bien|listo|perfecto|claro|hecho|acepto)\b/i;
+const AMOUNT = "\\$?\\s*(\\d{1,7}(?:\\.\\d{1,2})?)";
+
+/**
+ * Deterministic Spanish fallback used when no OpenAI key is configured. It
+ * reads the merchant's latest quote and the client's agreement after it, and
+ * leaves anything it cannot ground to a clarification.
+ */
+export class RuleExtractor implements ExtractorPort {
+  async extract(messages: Observation[]): Promise<CandidateFacts> {
+    const none = (ambiguities: string[] = []): CandidateFacts => ({
+      agreed: false,
+      lines: [],
+      totalText: null,
+      requestedNowText: null,
+      kind: "FULL",
+      ambiguities,
+      evidence: [],
+    });
+    const quoteIndex = messages.findLastIndex(
+      (m) =>
+        m.fromMe &&
+        m.text &&
+        new RegExp(`\\b[a-záéíóúñ ]+\\s+${AMOUNT}`, "i").test(m.text),
+    );
+    if (quoteIndex < 0) return none();
+    const quote = messages[quoteIndex]!;
+    const agreement = messages
+      .slice(quoteIndex + 1)
+      .findLast((m) => !m.fromMe && AGREEMENT.test(m.text));
+    if (!agreement) return none();
+    const [itemsText] = quote.text.split(
+      /\btotal\b|\banticipo\b|\bsaldo\b|\badelanto\b/i,
+    );
+    const lines = (itemsText ?? "")
+      .split(/[,;.]|\sy\s|\+/)
+      .map((part) =>
+        part
+          .trim()
+          .match(new RegExp(`^(.+?)\\s+${AMOUNT}\\s*(?:pesos|mxn)?$`, "i")),
+      )
+      .filter((m): m is RegExpMatchArray => !!m)
+      .map((m) => ({ description: m[1]!.trim(), amountText: m[2]! }));
+    const total =
+      quote.text.match(
+        new RegExp(`\\btotal\\s*(?:de|es|:)?\\s*${AMOUNT}`, "i"),
+      )?.[1] ?? null;
+    const deposit = quote.text.match(
+      new RegExp(
+        `\\b(?:anticipo|adelanto|depósito|deposito|enganche)\\s*(?:de|:)?\\s*${AMOUNT}`,
+        "i",
+      ),
+    )?.[1];
+    const balance = quote.text.match(
+      new RegExp(`\\b(?:saldo|resto)\\s*(?:de|:)?\\s*${AMOUNT}`, "i"),
+    )?.[1];
+    const sum = lines.reduce((n, l) => n + parsePesos(l.amountText), 0);
+    const ambiguities: string[] = [];
+    if (!lines.length) ambiguities.push("No pude leer el desglose.");
+    if (total && lines.length && sum !== parsePesos(total))
+      ambiguities.push("El desglose no suma el total.");
+    const requested = deposit ?? balance ?? total;
+    return {
+      agreed: true,
+      lines,
+      totalText: total,
+      requestedNowText: requested ?? null,
+      kind: deposit ? "DEPOSIT" : balance ? "BALANCE" : "FULL",
+      ambiguities,
+      evidence: [quote.messageId, agreement.messageId],
+    };
+  }
+}

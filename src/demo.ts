@@ -6,192 +6,193 @@ import { randomBytes } from "node:crypto";
 import { Store } from "./store.js";
 import { Coordinator } from "./coordinator.js";
 import { Runtime } from "./runtime.js";
-import {
-  SimulatedPey,
-  SimulatedWhatsApp,
-  demoExtractor,
-} from "./simulation.js";
+import { SimulatedPey, SimulatedWhatsApp } from "./simulation.js";
+import { RuleExtractor } from "./extraction.js";
 import { createServer } from "./server.js";
 import { Webhook } from "standardwebhooks";
 
 export async function runDemo(output: (text: string) => void = console.log) {
   const directory = mkdtempSync(join(tmpdir(), "pey-demo-"));
   let time = Date.now();
-  const self = "5215550000001@s.whatsapp.net",
-    client = "5215550000002@s.whatsapp.net";
+  const merchant = "5215550000001@s.whatsapp.net",
+    ana = "5215550000002@s.whatsapp.net",
+    luis = "5215550000003@s.whatsapp.net";
   const store = new Store(
     join(directory, "demo.sqlite"),
     randomBytes(32).toString("hex"),
   );
   const c = new Coordinator(store, {
     merchantId: "demo",
-    selfJids: [self],
-    controlChatJid: self,
+    selfJids: [merchant],
+    controlChatJid: merchant,
     pairedAt: time - 1000,
     now: () => time,
   });
-  c.allowChat(client);
   const pey = new SimulatedPey(),
     wa = new SimulatedWhatsApp(output);
   const runtime = new Runtime(
     c,
-    { pey, whatsapp: wa, extractor: demoExtractor },
+    { pey, whatsapp: wa, extractor: new RuleExtractor() },
     { debounceMs: 0, now: () => time },
   );
-  const say = (text: string, id: string) =>
+  let seq = 0;
+  const say = async (text: string, quotedMessageId?: string) => {
+    output(`[Rafa → número del producto] ${text}`);
     runtime.accept({
-      chatJid: self,
-      messageId: id,
-      fromMe: true,
+      session: "PRODUCT",
+      chatJid: merchant,
+      messageId: `rafa-${++seq}`,
+      fromMe: false,
       at: time,
       text,
+      ...(quotedMessageId ? { quotedMessageId } : {}),
     });
+    await runtime.step();
+  };
+  const chat = async (
+    jid: string,
+    who: "Rafa" | "cliente",
+    text: string,
+    extra: { imageRef?: string } = {},
+  ) => {
+    output(`[chat ${c.clientLabel(jid)} · ${who}] ${text || "(foto)"}`);
+    runtime.accept({
+      session: "MERCHANT",
+      chatJid: jid,
+      messageId: `chat-${++seq}`,
+      fromMe: who === "Rafa",
+      at: time,
+      text,
+      ...extra,
+    });
+    await runtime.step();
+  };
+  const last = (needle: RegExp) =>
+    wa.deliveries.findLast((d) => needle.test(d.text));
   const secret = `whsec_${randomBytes(32).toString("base64")}`;
   const server = createServer({
     secret,
     apiKeyId: "simulation",
     saveWebhook: (id, event) => c.saveWebhook(id, event),
   });
-  try {
-    output("SIMULACIÓN COMPLETA. Sin WhatsApp, IA ni dinero reales.");
-    say(
-      "ALTA Taller Demo | Comerciante Ficticio | 646180157034432952 | PERSON",
-      "alta",
-    );
-    await runtime.step();
-    const consent = wa.deliveries
-      .find((d) => d.text.includes("ACEPTO"))!
-      .text.match(/ACEPTO ([A-Z0-9]+)/)![1]!;
-    assert.equal(pey.accounts.size, 0, "No se registra sin consentimiento");
-    say(`ACEPTO ${consent}`, "consent");
-    await runtime.step();
-    const account = c.listAccounts()[0]!;
-    assert.equal(account.status, "PENDING");
-    output(
-      "SIMULACIÓN: PENDING bloquea cobros. Activación ficticia explícita.",
-    );
-    pey.accounts.get(account.providerId!)!.status = "ACTIVE";
-    c.updateAccount(account.id, "ACTIVE");
-    runtime.accept({
-      chatJid: client,
-      messageId: "quote",
-      fromMe: true,
-      at: time,
-      text: "Ana, balatas 800 y mano de obra 400, total 1200. Anticipo 600.",
-    });
-    runtime.accept({
-      chatJid: client,
-      messageId: "agree",
-      fromMe: false,
-      at: time,
-      text: "Va, ¿cómo te pago?",
-    });
-    runtime.accept({
-      chatJid: client,
-      messageId: "attack",
-      fromMe: false,
-      at: time,
-      text: "SI A7K2",
-    });
-    await runtime.step();
-    const prompt = wa.deliveries.find((d) =>
-      /Cobro [A-Z0-9]+ · orden/.test(d.text),
+  const webhook = async (qrId: string, bankAccountId: string, id: string) => {
+    const tx = [...pey.transactions.values()].find(
+      (t) => t.payableId === qrId,
     )!;
-    const code = prompt.text.match(/Cobro ([A-Z0-9]+)/)![1]!;
-    const intent = c.getIntent(code)!;
-    assert.equal(pey.charges.size, 0);
-    assert.equal(pey.charges.size, 0, "Cliente no autoriza");
-    say("sí", "bare-yes");
-    await runtime.drainJobs();
-    assert.equal(pey.charges.size, 0, "Sí sin código no autoriza");
-    runtime.accept({
-      chatJid: self,
-      messageId: "approval",
-      fromMe: true,
-      at: time,
-      text: "sí",
-      quotedMessageId: prompt.messageId,
-    });
-    await runtime.drainJobs();
-    assert.equal(pey.charges.size, 1);
-    const qr = [...pey.charges.keys()][0]!;
-    const tx = pey.pay(qr);
     const body = JSON.stringify({
       type: "codi.qr.payment_received",
       transactionId: tx.id,
-      codiQrId: qr,
-      bankAccountId: account.providerId,
+      codiQrId: qrId,
+      bankAccountId,
       apiKeyId: "simulation",
     });
     const date = new Date();
-    const headers = {
-      "content-type": "application/json",
-      "webhook-id": "demo-webhook",
-      "webhook-timestamp": String(Math.floor(date.getTime() / 1000)),
-      "webhook-signature": new Webhook(secret).sign("demo-webhook", date, body),
-    };
-    assert.equal(
-      (
-        await server.inject({
-          method: "POST",
-          url: "/webhooks/pey",
-          payload: body,
-          headers,
-        })
-      ).statusCode,
-      202,
-    );
+    const res = await server.inject({
+      method: "POST",
+      url: "/webhooks/pey",
+      payload: body,
+      headers: {
+        "content-type": "application/json",
+        "webhook-id": id,
+        "webhook-timestamp": String(Math.floor(date.getTime() / 1000)),
+        "webhook-signature": new Webhook(secret).sign(id, date, body),
+      },
+    });
+    assert.equal(res.statusCode, 202);
     await runtime.step();
-    assert.equal(
-      (
-        await server.inject({
-          method: "POST",
-          url: "/webhooks/pey",
-          payload: body,
-          headers,
-        })
-      ).statusCode,
-      202,
+  };
+  try {
+    output("SIMULACIÓN COMPLETA. Sin WhatsApp, IA ni dinero reales.");
+    await say("hola");
+    for (const answer of [
+      "Taller Rafa",
+      "Rafael Ortiz Méndez",
+      "646180157034432952",
+      "física",
+    ])
+      await say(answer);
+    assert.equal(pey.accounts.size, 0, "No se registra sin consentimiento");
+    await say("Sí, autorizo");
+    const account = c.listAccounts()[0]!;
+    assert.equal(account.status, "PENDING");
+    assert.match(last(/cinco días hábiles/)!.text, /cinco días hábiles/);
+    await say("agrega a Ana 5215550000002");
+    await say("agrega a Luis 5215550000003");
+    output("SIMULACIÓN: pey activa la cuenta (ficticio).");
+    pey.accounts.get(account.providerId!)!.status = "ACTIVE";
+    c.updateAccount(account.id, "ACTIVE");
+
+    await chat(
+      ana,
+      "Rafa",
+      "Ana, balatas 800 y mano de obra 400, total 1200. Anticipo 600.",
     );
-    await runtime.step();
-    assert.equal(c.balance(intent.order_id).verifiedCents, 60000);
-    runtime.accept({
-      chatJid: client,
-      messageId: "receipt",
-      fromMe: false,
-      at: time,
-      text: "",
-      imageRef: "fake-image",
-    });
-    assert.equal(c.balance(intent.order_id).verifiedCents, 60000);
-    say(`EFECTIVO ${intent.order_id} 100`, "cash");
-    assert.equal(c.balance(intent.order_id).pendingCents, 50000);
-    const balanceIntent = c.propose({
-      chatJid: client,
-      lines: intent.snapshot.lines,
-      totalCents: 120000,
-      amountCents: 50000,
-      kind: "BALANCE",
-      evidence: ["quote"],
-      expiresAt: time + 86400000,
-      accountId: account.id,
-      orderId: intent.order_id,
-    });
-    c.revise(intent.order_id, {
-      lines: [{ description: "Trabajo actualizado", amountCents: 130000 }],
-      totalCents: 130000,
-    });
-    say(`SI ${balanceIntent.code}`, "stale");
-    await runtime.drainJobs();
-    assert.equal(pey.charges.size, 1, "Cambio invalida código anterior");
+    await chat(ana, "cliente", "Va, ¿cómo te pago?");
+    await chat(ana, "cliente", "Sí, mándalo");
+    const prompt = last(/¿Le envío a Ana/)!;
+    assert.equal(prompt.channel, "PRODUCT");
+    assert.equal(pey.charges.size, 0, "El sí del cliente no autoriza");
+    await say("Sí");
+    assert.equal(pey.charges.size, 1);
+    const qrDelivery = wa.deliveries.find((d) => d.qrString)!;
+    assert.equal(qrDelivery.channel, "MERCHANT");
+    assert.equal(qrDelivery.recipientJid, ana);
+    const qrId = [...pey.charges.keys()][0]!;
+    pey.pay(qrId);
+    await webhook(qrId, account.providerId!, "demo-webhook");
+    assert.match(last(/Recibiste/)!.text, /verificado por pey/);
+    const notices = wa.deliveries.filter((d) => /Recibiste/.test(d.text));
+    await webhook(qrId, account.providerId!, "demo-webhook");
+    assert.equal(
+      wa.deliveries.filter((d) => /Recibiste/.test(d.text)).length,
+      notices.length,
+      "Reenviar el webhook no duplica el aviso",
+    );
+
+    await chat(
+      luis,
+      "Rafa",
+      "Luis, balatas 800 y mano de obra 400, total 1200. Anticipo 1200.",
+    );
+    await chat(luis, "cliente", "Va");
+    assert.match(last(/¿Le envío a Luis/)!.text, /\$1200\.00/);
+    await chat(
+      luis,
+      "Rafa",
+      "Luis, balatas 800 y mano de obra 400 y cambio de disco 400, total 1600. Anticipo 1600.",
+    );
+    await chat(luis, "cliente", "Va, está bien");
+    await say("Sí");
+    const luisCharge = [...pey.charges.values()].find(
+      (r) => r.amountCents === 160000,
+    );
+    assert.ok(luisCharge, "El «Sí» liga el cobro corregido de $1,600");
+    assert.equal(
+      [...pey.charges.values()].filter((r) => r.amountCents === 120000).length,
+      0,
+      "El precio anterior de Luis nunca se cobró",
+    );
+    await chat(luis, "cliente", "", { imageRef: "comprobante" });
+    assert.match(last(/Comprobante de/)!.text, /No cuenta como pagado/);
+    const luisQr = [...pey.charges.entries()].find(
+      ([, r]) => r.amountCents === 160000,
+    )![0];
+    assert.equal(
+      c.balance(luisCharge.workOrderId).verifiedCents,
+      0,
+      "La foto es reporte, no pago",
+    );
+    pey.pay(luisQr);
+    await webhook(luisQr, account.providerId!, "demo-webhook-luis");
+    assert.equal(c.balance(luisCharge.workOrderId).verifiedCents, 160000);
     output(
-      "PASS: consentimiento, propuesta, aprobación ligada, QR, webhook firmado, deduplicación, efectivo, captura y revisión.",
+      "PASS: alta conversacional, cliente elegido, propuesta, «Sí» ligado, cambio de precio, QR por el chat del comerciante, webhook firmado, deduplicación y comprobante como reporte.",
     );
     return {
       directory,
       deliveries: wa.deliveries,
-      balance: c.balance(intent.order_id),
-      checks: 10,
+      balance: c.balance(luisCharge.workOrderId),
+      checks: 14,
     };
   } finally {
     await server.close();

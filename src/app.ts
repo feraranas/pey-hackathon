@@ -9,7 +9,8 @@ import { Store } from "./store.js";
 import { Coordinator } from "./coordinator.js";
 import { PeyClient } from "./pey.js";
 import { BaileysWhatsApp } from "./whatsapp.js";
-import { OpenAIExtractor } from "./extraction.js";
+import { OpenAIExtractor, RuleExtractor } from "./extraction.js";
+import { RoutedWhatsApp } from "./router.js";
 import { Runtime } from "./runtime.js";
 import { createServer } from "./server.js";
 
@@ -21,7 +22,7 @@ export async function main() {
     );
   const logger = createLogger([
     config.PEY_API_KEY,
-    config.OPENAI_API_KEY,
+    ...(config.OPENAI_API_KEY ? [config.OPENAI_API_KEY] : []),
     config.PEY_WEBHOOK_SECRET,
     config.SESSION_ENCRYPTION_KEY,
   ]);
@@ -49,92 +50,123 @@ export async function main() {
     store.db
       .prepare("INSERT INTO app_settings VALUES(?,?)")
       .run("paired_at", String(pairedAt));
-  const selfJids = [
-    config.SELF_JID,
-    ...(config.SELF_LID ? [config.SELF_LID] : []),
+  const merchantJids = [
+    config.MERCHANT_JID,
+    ...(config.MERCHANT_LID ? [config.MERCHANT_LID] : []),
   ];
   const coordinator = new Coordinator(store, {
     merchantId: config.MERCHANT_ID,
-    selfJids,
-    controlChatJid: config.SELF_JID,
+    selfJids: merchantJids,
+    controlChatJid: config.MERCHANT_JID,
     pairedAt,
   });
-  coordinator.setAllowedChats(config.allowedChatJids);
+  for (const jid of config.allowedChatJids) coordinator.allowChat(jid);
   let runtime: Runtime;
-  const whatsapp = new BaileysWhatsApp({
-    onConnectionDiagnostic: (diagnostic) => {
-      logger.info(diagnostic, "WhatsApp connection diagnostic");
-    },
-    pairingPhoneNumber:
-      config.WHATSAPP_PAIRING_MODE === "code"
-        ? config.SELF_JID.split("@")[0]
-        : undefined,
-    onPairingCode: (code) => {
-      process.stdout.write(
-        `Código PRIVADO de vinculación: ${code}\nEn WhatsApp: Dispositivos vinculados → Vincular con número de teléfono.\n`,
-      );
-    },
-    authPath: join(config.DATA_DIR, "whatsapp.enc"),
-    encryptionKey: Buffer.from(config.SESSION_ENCRYPTION_KEY, "hex"),
-    allowedJids: config.allowedChatJids,
-    expectedOwnJids: selfJids,
-    pairedAt,
-    onObservation: (observation) => {
-      runtime.accept(observation);
-    },
-    onEcho: (messageId, chatJid) =>
-      coordinator.markDeliveryEcho(messageId, chatJid),
-    onIdentity: (jids) => {
-      coordinator.bindSelfJids(jids);
-      coordinator.notifyControl(
-        "Verificando sesión de cobros. Al recibir este mensaje puedes usar ALTA o aprobar un código vigente.",
-        `session-probe:${randomUUID()}`,
-      );
-      logger.info(
-        { identityCount: jids.length },
-        "Sesión de WhatsApp identificada",
-      );
-    },
-    onPairingQr: (qr) => {
-      try {
-        const matrix = QRCode.create(qr).modules;
-        const margin = 4;
-        const width = matrix.size + margin * 2;
-        const dark = (row: number, col: number) =>
-          row >= margin &&
-          col >= margin &&
-          row < matrix.size + margin &&
-          col < matrix.size + margin &&
-          Boolean(matrix.get(row - margin, col - margin));
-        let rendered = "";
-        for (let row = 0; row < width; row += 2) {
-          // Explicit black foreground and white background, independent of theme.
-          rendered += "\x1b[0;30;47m";
-          for (let col = 0; col < width; col++) {
-            const top = dark(row, col),
-              bottom = dark(row + 1, col);
-            rendered += top ? (bottom ? "█" : "▀") : bottom ? "▄" : " ";
-          }
-          rendered += "\x1b[0m\n";
+  const pairingPrinter = (label: string) => (qr: string) => {
+    try {
+      const matrix = QRCode.create(qr).modules;
+      const margin = 4;
+      const width = matrix.size + margin * 2;
+      const dark = (row: number, col: number) =>
+        row >= margin &&
+        col >= margin &&
+        row < matrix.size + margin &&
+        col < matrix.size + margin &&
+        Boolean(matrix.get(row - margin, col - margin));
+      let rendered = "";
+      for (let row = 0; row < width; row += 2) {
+        rendered += "\x1b[0;30;47m";
+        for (let col = 0; col < width; col++) {
+          const top = dark(row, col),
+            bottom = dark(row + 1, col);
+          rendered += top ? (bottom ? "█" : "▀") : bottom ? "▄" : " ";
         }
-        process.stdout.write(
-          `QR PRIVADO. Amplía la terminal a ${width} columnas como mínimo y escanea desde WhatsApp → Dispositivos vinculados.\n${rendered}`,
-        );
-      } catch {
-        logger.error("No se pudo mostrar el QR de vinculación");
+        rendered += "\x1b[0m\n";
       }
-    },
-    onError: (error) => logger.error({ err: error }, "Error de WhatsApp"),
+      process.stdout.write(
+        `QR PRIVADO (${label}). Amplía la terminal a ${width} columnas como mínimo y escanea desde WhatsApp → Dispositivos vinculados.\n${rendered}`,
+      );
+    } catch {
+      logger.error("No se pudo mostrar el QR de vinculación");
+    }
+  };
+  const session = (
+    channel: "PRODUCT" | "MERCHANT",
+    ownJid: string,
+    allowedJids: string[] | (() => string[]),
+    authFile: string,
+  ) =>
+    new BaileysWhatsApp({
+      session: channel,
+      onConnectionDiagnostic: (diagnostic) => {
+        logger.info(
+          { channel, ...diagnostic },
+          "WhatsApp connection diagnostic",
+        );
+      },
+      pairingPhoneNumber:
+        config.WHATSAPP_PAIRING_MODE === "code"
+          ? ownJid.split("@")[0]
+          : undefined,
+      onPairingCode: (code) => {
+        process.stdout.write(
+          `Código PRIVADO de vinculación (${channel}): ${code}\nEn WhatsApp: Dispositivos vinculados → Vincular con número de teléfono.\n`,
+        );
+      },
+      authPath: join(config.DATA_DIR, authFile),
+      encryptionKey: Buffer.from(config.SESSION_ENCRYPTION_KEY, "hex"),
+      allowedJids,
+      expectedOwnJids: [ownJid],
+      pairedAt,
+      onObservation: (observation) => {
+        runtime.accept(observation);
+      },
+      onEcho: (messageId, chatJid) =>
+        coordinator.markDeliveryEcho(messageId, chatJid),
+      onIdentity: (jids) => {
+        logger.info(
+          { channel, identityCount: jids.length },
+          "Sesión de WhatsApp identificada",
+        );
+        if (channel === "PRODUCT") {
+          coordinator.bindSelfJids(merchantJids);
+          coordinator.notifyControl(
+            "Verificando el canal de cobros. Si recibes este mensaje, escríbeme «hola» para empezar.",
+            `session-probe:${randomUUID()}`,
+          );
+        }
+      },
+      onPairingQr: pairingPrinter(channel),
+      onError: (error) =>
+        logger.error({ err: error, channel }, "Error de WhatsApp"),
+    });
+  const productSession = session(
+    "PRODUCT",
+    config.PRODUCT_JID,
+    merchantJids,
+    "whatsapp-product.enc",
+  );
+  const merchantSession = session(
+    "MERCHANT",
+    config.MERCHANT_JID,
+    () => coordinator.listClients().map((client) => client.jid),
+    "whatsapp.enc",
+  );
+  const whatsapp = new RoutedWhatsApp({
+    PRODUCT: productSession,
+    MERCHANT: merchantSession,
   });
   runtime = new Runtime(
     coordinator,
     {
       pey: new PeyClient({ apiKey: config.PEY_API_KEY }),
       whatsapp,
-      extractor: new OpenAIExtractor({
-        apiKey: config.OPENAI_API_KEY,
-        model: config.OPENAI_MODEL,
-      }),
+      extractor: config.OPENAI_API_KEY
+        ? new OpenAIExtractor({
+            apiKey: config.OPENAI_API_KEY,
+            model: config.OPENAI_MODEL,
+          })
+        : new RuleExtractor(),
     },
     {
       debounceMs: config.EXTRACTION_DELAY_MS,
@@ -164,7 +196,8 @@ export async function main() {
     if (stopped) return;
     stopped = true;
     if (timer) clearTimeout(timer);
-    whatsapp.stop();
+    productSession.stop();
+    merchantSession.stop();
     await active;
     await server.close();
     store.close();
@@ -172,7 +205,8 @@ export async function main() {
   };
   try {
     await server.listen({ host: config.HOST, port: config.PORT });
-    await whatsapp.start();
+    await productSession.start();
+    await merchantSession.start();
     schedule();
     process.once("SIGINT", () => {
       void shutdown();

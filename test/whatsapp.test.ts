@@ -10,6 +10,7 @@ import {
 } from "../src/whatsapp.js";
 
 const opts = {
+  session: "PRODUCT" as const,
   ownJids: ["521111:4@s.whatsapp.net", "777@lid"],
   allowedJids: ["522222@s.whatsapp.net"],
   pairedAt: 1000000,
@@ -63,10 +64,16 @@ describe("WhatsApp boundary", () => {
       quotedMessageId: "prompt",
       fromMe: false,
     });
-    expect(parseObservation(message("777@lid", true), opts)?.chatJid).toBe(
-      "777@lid",
-    );
+    expect(
+      parseObservation(message("522222@s.whatsapp.net", true), opts)?.session,
+    ).toBe("PRODUCT");
     expect(parseObservation(message("777@lid", false), opts)).toBeNull();
+    expect(
+      parseObservation(message("777@lid", true), {
+        ...opts,
+        allowedJids: ["777@lid"],
+      }),
+    ).toBeNull();
     expect(parseObservation(message("522222@g.us"), opts)).toBeNull();
     expect(parseObservation(message("523333@s.whatsapp.net"), opts)).toBeNull();
     expect(
@@ -132,7 +139,8 @@ function fakeSocket() {
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 const delivery = {
   id: "d1",
-  recipientJid: "521111@s.whatsapp.net",
+  channel: "PRODUCT" as const,
+  recipientJid: "522222@s.whatsapp.net",
   messageId: "probe",
   text: "Verificando sesión",
 };
@@ -153,6 +161,7 @@ describe("WhatsApp socket behavior", () => {
       const onCode = vi.fn();
       const onQr = vi.fn();
       const adapter = new BaileysWhatsApp({
+        session: "PRODUCT",
         authPath,
         encryptionKey: key,
         allowedJids: opts.allowedJids,
@@ -187,6 +196,7 @@ describe("WhatsApp socket behavior", () => {
     const seen: string[] = [];
     const errors: unknown[] = [];
     const adapter = new BaileysWhatsApp({
+      session: "PRODUCT",
       authPath: join(dir, "auth"),
       encryptionKey: Buffer.alloc(32, 1),
       allowedJids: opts.allowedJids,
@@ -208,10 +218,10 @@ describe("WhatsApp socket behavior", () => {
       fake.ev.emit("messages.upsert", {
         type: "append",
         messages: [
-          message("521111@s.whatsapp.net", true),
+          message("522222@s.whatsapp.net", true),
           {
-            ...message("521111@s.whatsapp.net", true),
-            key: { remoteJid: "521111@s.whatsapp.net", fromMe: true, id: "m2" },
+            ...message("522222@s.whatsapp.net", true),
+            key: { remoteJid: "522222@s.whatsapp.net", fromMe: true, id: "m2" },
           },
         ],
       });
@@ -223,7 +233,7 @@ describe("WhatsApp socket behavior", () => {
       fake.ev.emit("messages.update", [
         {
           key: {
-            remoteJid: "522222@s.whatsapp.net",
+            remoteJid: "523333@s.whatsapp.net",
             fromMe: true,
             id: "probe",
           },
@@ -252,6 +262,7 @@ describe("WhatsApp socket behavior", () => {
     const fake = fakeSocket();
     const seen: string[] = [];
     const adapter = new BaileysWhatsApp({
+      session: "PRODUCT",
       authPath: join(dir, "auth"),
       encryptionKey: Buffer.alloc(32, 1),
       allowedJids: opts.allowedJids,
@@ -293,6 +304,7 @@ describe("WhatsApp socket behavior", () => {
     fake.socket.sendMessage = (() =>
       new Promise(() => {})) as WASocket["sendMessage"];
     const adapter = new BaileysWhatsApp({
+      session: "PRODUCT",
       authPath: join(dir, "auth"),
       encryptionKey: Buffer.alloc(32, 1),
       allowedJids: opts.allowedJids,
@@ -324,6 +336,7 @@ describe("WhatsApp socket behavior", () => {
     const errors: unknown[] = [];
     const seen: string[] = [];
     const adapter = new BaileysWhatsApp({
+      session: "PRODUCT",
       authPath: join(dir, "auth"),
       encryptionKey: Buffer.alloc(32, 1),
       allowedJids: opts.allowedJids,
@@ -374,6 +387,7 @@ describe("WhatsApp socket behavior", () => {
     let attempts = 0;
     const errors: unknown[] = [];
     const adapter = new BaileysWhatsApp({
+      session: "PRODUCT",
       authPath: join(dir, "auth"),
       encryptionKey: Buffer.alloc(32, 1),
       allowedJids: opts.allowedJids,

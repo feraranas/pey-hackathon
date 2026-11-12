@@ -51,7 +51,7 @@ export class Runtime {
     return this.coordinator.db.transaction(() => {
       const result = this.coordinator.observe(observation);
       if (result !== "accepted") return result;
-      if (this.coordinator.config.selfJids.includes(observation.chatJid)) {
+      if (observation.session === "PRODUCT") {
         const command = observation.text.trim().match(/^NUEVA\s+(\S+)$/i);
         if (
           command &&
@@ -78,7 +78,7 @@ export class Runtime {
           observation.messageId,
         );
         this.coordinator.notifyControl(
-          "Comprobante reportado, pendiente de verificar. El saldo no cambia.",
+          `Comprobante de ${this.coordinator.clientLabel(observation.chatJid)} reportado, pendiente de verificar. No cuenta como pagado hasta que pey lo confirme.`,
           `report:${observation.messageId}`,
         );
       }
@@ -211,7 +211,7 @@ export class Runtime {
     this.coordinator.updateAccount(account.id, remote.status);
     if (remote.status !== account.status)
       this.coordinator.notifyControl(
-        `Estado de cuenta ${remote.status}. ${remote.status === "ACTIVE" ? "Ya puedes solicitar cobros." : remote.status === "ERROR" ? "El registro requiere revisión." : "La activación puede tardar hasta cinco días hábiles."}`,
+        `Estado de cuenta ${remote.status}. ${remote.status === "ACTIVE" ? "Ya puedes cobrar: cuando acuerdes un precio con un cliente de tu lista, te pregunto aquí si le envío el cobro." : remote.status === "ERROR" ? "El registro requiere revisión." : "La activación puede tardar hasta cinco días hábiles."}`,
         `account-status:${account.id}:${remote.status}`,
       );
   }

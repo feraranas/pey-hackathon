@@ -4,6 +4,7 @@ import type { CandidateFacts, Observation } from "../src/contracts.js";
 
 const messages: Observation[] = [
   {
+    session: "MERCHANT",
     chatJid: "1@s.whatsapp.net",
     messageId: "m1",
     fromMe: true,
