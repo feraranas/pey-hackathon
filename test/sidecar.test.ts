@@ -131,6 +131,18 @@ describe("sidecar adapter fails closed", () => {
     );
     expect(fake!.sends).toHaveLength(0);
   });
+  it("accepts the other Mexican spelling of the configured number", async () => {
+    await open(
+      "PRODUCT",
+      { expectedOwnJids: ["527715697632@s.whatsapp.net"] },
+      new FakeSidecar(undefined, {
+        t: "status",
+        phase: "connected",
+        identity: ["5217715697632@s.whatsapp.net"],
+      }),
+    );
+    expect(adapter!.ready).toBe(true);
+  });
   it("blocks sends and observations when the linked number is not the configured one", async () => {
     const { seen, errors } = await open(
       "MERCHANT",

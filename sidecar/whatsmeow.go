@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -66,9 +67,18 @@ func (b *WhatsmeowBackend) identity() []string {
 	return ids
 }
 
+// canonPN folds Mexico's two WhatsApp spellings (52 + 10 digits and 521 + 10
+// digits) into one, so the configured number matches whichever the server uses.
+func canonPN(user string) string {
+	if len(user) == 13 && strings.HasPrefix(user, "521") {
+		return "52" + user[3:]
+	}
+	return user
+}
+
 // identityMatches is true only when the linked phone number is the expected one.
 func (b *WhatsmeowBackend) identityMatches() bool {
-	return b.cli.Store.ID != nil && b.cli.Store.ID.ToNonAD().User == b.expectPN
+	return b.cli.Store.ID != nil && canonPN(b.cli.Store.ID.ToNonAD().User) == canonPN(b.expectPN)
 }
 
 func (b *WhatsmeowBackend) Status() Frame {
@@ -99,49 +109,73 @@ func (b *WhatsmeowBackend) Run(ctx context.Context, emit func(Frame)) error {
 	b.cli.AddEventHandler(func(evt any) { b.handle(emit, evt) })
 	if b.cli.Store.ID == nil {
 		b.setPhase(PhasePairing)
-		qr, err := b.cli.GetQRChannel(ctx)
-		if err != nil {
-			return err
-		}
-		if err := b.cli.ConnectContext(ctx); err != nil {
-			return err
-		}
-		go func() {
-			for item := range qr {
-				switch item.Event {
-				case whatsmeow.QRChannelEventCode:
-					f := frame(TPairQR)
-					f.Code = item.Code
-					emit(f)
-				case whatsmeow.QRChannelEventPasskeyRequest:
-					if item.PasskeyRequest != nil {
-						payload, _ := json.Marshal(item.PasskeyRequest.PublicKey)
-						f := frame(TPasskeyReq)
-						f.Payload = payload
-						b.mu.Lock()
-						b.passkeyPending = true
-						b.mu.Unlock()
-						emit(f)
-					}
-				case whatsmeow.QRChannelEventPasskeyResponse:
-					if item.PasskeyConfirmation != nil {
-						f := frame(TPasskeyCode)
-						f.Code = item.PasskeyConfirmation.Code
-						emit(f)
-					}
-				case whatsmeow.QRChannelEventError:
-					f := frame(TPasskeyError)
-					f.Detail = "pairing failed"
-					emit(f)
+		// Each QR channel ends after about two minutes. Open a fresh one until the
+		// account is linked, so the QR can always be regenerated without a restart.
+		first := true
+		for b.cli.Store.ID == nil && ctx.Err() == nil {
+			if !first {
+				select {
+				case <-ctx.Done():
+				case <-time.After(2 * time.Second):
+				}
+				if ctx.Err() != nil {
+					break
 				}
 			}
-		}()
+			first = false
+			qr, err := b.cli.GetQRChannel(ctx)
+			if err != nil {
+				return err
+			}
+			if err := b.cli.ConnectContext(ctx); err != nil {
+				return err
+			}
+			done := make(chan struct{})
+			go b.pairingFrames(emit, qr, done)
+			select {
+			case <-done:
+			case <-ctx.Done():
+			}
+		}
 	} else if err := b.cli.ConnectContext(ctx); err != nil {
 		return err
 	}
 	<-ctx.Done()
 	b.cli.Disconnect()
 	return nil
+}
+
+// pairingFrames forwards QR and passkey items. It returns when the channel closes.
+func (b *WhatsmeowBackend) pairingFrames(emit func(Frame), qr <-chan whatsmeow.QRChannelItem, done chan<- struct{}) {
+	for item := range qr {
+		switch item.Event {
+		case whatsmeow.QRChannelEventCode:
+			f := frame(TPairQR)
+			f.Code = item.Code
+			emit(f)
+		case whatsmeow.QRChannelEventPasskeyRequest:
+			if item.PasskeyRequest != nil {
+				payload, _ := json.Marshal(item.PasskeyRequest.PublicKey)
+				f := frame(TPasskeyReq)
+				f.Payload = payload
+				b.mu.Lock()
+				b.passkeyPending = true
+				b.mu.Unlock()
+				emit(f)
+			}
+		case whatsmeow.QRChannelEventPasskeyResponse:
+			if item.PasskeyConfirmation != nil {
+				f := frame(TPasskeyCode)
+				f.Code = item.PasskeyConfirmation.Code
+				emit(f)
+			}
+		case whatsmeow.QRChannelEventError:
+			f := frame(TPasskeyError)
+			f.Detail = "pairing failed"
+			emit(f)
+		}
+	}
+	close(done)
 }
 
 func (b *WhatsmeowBackend) handle(emit func(Frame), evt any) {
@@ -195,7 +229,7 @@ func (b *WhatsmeowBackend) Send(ctx context.Context, req SendRequest) (string, s
 		return OutcomeBeforeTransmit, "session identity does not match the configured number"
 	}
 	to, err := types.ParseJID(req.To)
-	if err != nil || to.Server != types.DefaultUserServer && to.Server != types.HiddenUserServer || to.ToNonAD().User == b.expectPN {
+	if err != nil || to.Server != types.DefaultUserServer && to.Server != types.HiddenUserServer || canonPN(to.ToNonAD().User) == canonPN(b.expectPN) {
 		return OutcomeBeforeTransmit, "recipient is not an individual chat of someone else"
 	}
 	var msg *waE2E.Message

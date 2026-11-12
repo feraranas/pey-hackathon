@@ -37,3 +37,15 @@ Para verificar el apretón de manos sin enviar nada: `node --import tsx scripts/
 3. Con el comerciante presente: comprobar identidad, un envío a un chat elegido, cerrar y reiniciar para demostrar reconexión, y anotar el dispositivo vinculado temporal.
 
 Verificado en esta caja (no con una cuenta real): el sidecar abre su almacén, crea el socket `0600`, anuncia `hello` y `status`, y entrega un `pair_qr` real de los servidores de WhatsApp; el adaptador Node lo recibe y queda no listo hasta que el número vinculado coincida.
+
+## Vincular un número y regenerar el QR
+
+El QR rota cada 20 a 60 segundos y el sidecar abre uno nuevo cuando se agota el canal (cada dos minutos y medio, sin reiniciar). `scripts/pair-qr.ts` escribe el QR vigente en un PNG `0600` y lo actualiza con cada rotación, y termina cuando el número esperado queda vinculado:
+
+```bash
+node --import tsx scripts/pair-qr.ts /run/pey/product/wa.sock 527715697632@s.whatsapp.net /ruta/qr.png
+```
+
+Abre el PNG justo antes de escanear (WhatsApp → Dispositivos vinculados → Vincular un dispositivo). Si lo escaneas tarde, vuelve a abrir el mismo archivo. El PNG y el almacén `wa.db` son secretos: no los versiones ni los compartas.
+
+Los números de México tienen dos escrituras, `52` más diez dígitos y `521` más diez dígitos. El sidecar y el adaptador tratan ambas como el mismo número al verificar la identidad. Al enviar a un cliente, usa el JID que WhatsApp devuelva para él.

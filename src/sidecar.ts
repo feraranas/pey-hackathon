@@ -57,6 +57,12 @@ const bare = (jid: string) => {
   return user && server ? `${user.split(":")[0]}@${server}` : "";
 };
 
+/** Mexico has two WhatsApp spellings, 52 + 10 digits and 521 + 10 digits. */
+export const phoneKey = (jid: string) => {
+  const b = bare(jid);
+  return b.replace(/^521(\d{10})@/, "52$1@");
+};
+
 /**
  * Transport over the whatsmeow sidecar (NDJSON on a Unix socket, protocol 1).
  * It fails closed: a different protocol version, a different linked number,
@@ -237,10 +243,10 @@ export class SidecarWhatsApp implements WhatsAppPort {
   private onStatus(frame: Frame) {
     if (!this.compatible) return;
     const identity = (frame.identity ?? []).map(bare).filter(Boolean);
-    const expected = this.options.expectedOwnJids.map(bare).filter(Boolean);
+    const expected = this.options.expectedOwnJids.map(phoneKey).filter(Boolean);
     const matches =
       frame.phase === "connected" &&
-      identity.some((jid) => expected.includes(jid));
+      identity.some((jid) => expected.includes(phoneKey(jid)));
     if (!matches) {
       if (this.ownJids.length) this.verifiedDelivery = false;
       this.ownJids = [];
