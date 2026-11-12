@@ -1,16 +1,16 @@
 # Entrega: registro de criterios, despliegue y recuperación
 
-Base de este registro: `main` en `11a51e3` (11 de noviembre de 2026, hora de Ciudad de México). Cada fila separa lo demostrado en simulación de lo que exige una cuenta, un número o la VPS reales. Una fila simulada no acredita un pago real.
+Base de este registro: `main` en `039cb00` (11 de noviembre de 2026, hora de Ciudad de México). Cada fila separa lo demostrado en simulación de lo que exige una cuenta, un número o la VPS reales. Una fila simulada no acredita un pago real.
 
 ## Registro por criterio
 
 | # | Criterio | Resultado | Cómo se comprobó | Límite |
 |---|---|---|---|---|
 | 1 | Sesión vinculada, identidad, reconexión, recepción y envío autorizados | Simulado | `test/sidecar.test.ts` y `go test` del sidecar; el binario real llega a WhatsApp y entrega un `pair_qr`; `npm run verify` | Falta escanear el QR de cada número y la passkey del comerciante ([sidecar](whatsmeow-sidecar.md)). |
-| 2 | El comerciante autoriza una propuesta vigente antes del envío | Simulado | `test/conversation.test.ts`, `test/core.test.ts`, `npm run demo` | Con WhatsApp real depende de `PRODUCT_JID` y de la sesión del producto. |
+| 2 | El comerciante autoriza una propuesta vigente antes del envío | Simulado | `test/binding.test.ts` (un «Sí» solo liga lo que el comerciante vio), `test/conversation.test.ts`, `test/core.test.ts`, `npm run demo:story` | Con WhatsApp real depende de `PRODUCT_JID` y de la sesión del producto. |
 | 3 | QR real a cuenta `ACTIVE`, pago pequeño, webhook firmado, consulta por API | Simulado | `test/e2e.test.ts` y `npm run local` usan un sandbox local que firma webhooks | Falta la API key de pey, el secreto del webhook y una cuenta bancaria activa. |
-| 4 | Duplicados y reinicios no duplican acreditación ni aviso; lo incierto va a revisión | Probado en pruebas | `test/core.test.ts`, `test/runtime.test.ts`, `test/e2e.test.ts` | Igual que arriba para el flujo real. |
-| 5 | Pruebas, CI, configuración, respaldo y recuperación documentados | Parcial | CI verde en cada PR; `test/backup.test.ts`; este documento | El despliegue en la VPS no se ejecutó: no hay acceso SSH desde esta caja. |
+| 4 | Duplicados y reinicios no duplican acreditación ni aviso; lo incierto va a revisión | Probado en pruebas | `test/core.test.ts`, `test/webhook-order.test.ts`, `test/runtime.test.ts`, `test/e2e.test.ts` | Igual que arriba para el flujo real. |
+| 5 | Pruebas, CI, configuración, respaldo y recuperación documentados | Parcial | CI verde en cada PR; `test/backup.test.ts`; [ensayo real](ensayo-real.md); este documento | El despliegue en la VPS no se ejecutó: no hay acceso SSH desde esta caja. |
 
 ## Despliegue con Whatsmeow
 
