@@ -24,13 +24,13 @@ MERCHANT_NUMBER=52155... PRODUCT_NUMBER=52155... docker compose up -d
 
 El archivo `/etc/pey-hackathon/pey.env` debe incluir `PRODUCT_JID`, `MERCHANT_JID`, las claves de pey y `SESSION_ENCRYPTION_KEY`. No lo copies a Git ni lo imprimas. El archivo compose no se ha ejecutado aquí porque la caja no tiene Docker; solo se validó su sintaxis y la compilación estática del sidecar. Ejecuta primero `docker compose config` en la VPS.
 
-Los almacenes de dispositivos (`merchant-wa.db`, `product-wa.db`) usan SQLite sin cifrado propio. Cifra el disco o el volumen de la VPS y no abras el mismo volumen desde dos procesos de la app: `.service` lo impide.
+Los almacenes de dispositivos (`merchant-wa.db`, `product-wa.db`) usan SQLite sin cifrado propio ([guía](cifrado-en-reposo.md)). Cifra el disco o el volumen de la VPS y no abras el mismo volumen desde dos procesos de la app: `.service` lo impide.
 
 ## Respaldo y restauración
 
 1. Detén la app: `docker compose stop app`. El respaldo toma el cerrojo de `DATA_DIR`.
-2. `npm run backup -- /ruta/data /ruta/respaldo-nuevo` copia `pey.sqlite`, los almacenes `*-wa.db` y `whatsapp.enc` con la API de respaldo de SQLite (coherente con WAL, sin copiar archivos a medias) y verifica `integrity_check`.
-3. Verifica más tarde con `npm run backup -- --verify /ruta/respaldo`.
+2. `npm run backup -- /ruta/data /ruta/respaldo-nuevo` copia `pey.sqlite` y `whatsapp.enc`, y guarda los almacenes `*-wa.db` solo cifrados (`*.enc`), con la API de respaldo de SQLite (coherente con WAL, sin copiar archivos a medias). Necesita `SESSION_ENCRYPTION_KEY` y verifica `integrity_check`. Más detalle en [cifrado en reposo](cifrado-en-reposo.md).
+3. Verifica más tarde con `npm run backup -- --verify /ruta/respaldo`. Para restaurar: `npm run backup -- --restore /ruta/respaldo /ruta/data-vacío`.
 4. Guarda la clave `SESSION_ENCRYPTION_KEY` por separado y la copia fuera de la VPS.
 5. Para restaurar: detén todo, copia los archivos a un volumen nuevo, verifica y arranca. Restaurar una base antigua puede perder pagos posteriores. Si el resultado de un pago o envío es incierto, conserva la evidencia y detén los reintentos antes de decidir.
 

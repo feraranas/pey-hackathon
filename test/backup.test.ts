@@ -4,13 +4,15 @@ import {
   mkdirSync,
   writeFileSync,
   readFileSync,
+  readdirSync,
+  existsSync,
   rmSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Store } from "../src/store.js";
 import Database from "better-sqlite3";
-import { backup, verifyBackup } from "../src/backup.js";
+import { backup, backupKey, restore, verifyBackup } from "../src/backup.js";
 import { lockDataDirectory } from "../src/lifecycle.js";
 
 describe("persistent service lifecycle", () => {
@@ -48,26 +50,68 @@ describe("persistent service lifecycle", () => {
     restored.close();
     rmSync(root, { recursive: true });
   });
-  it("backs up Whatsmeow device stores and verifies every database", async () => {
+  it("backs up Whatsmeow device stores only encrypted, verifies them, and restores them", async () => {
     const root = mkdtempSync(join(tmpdir(), "pey-backup-"));
     const source = join(root, "data"),
-      target = join(root, "snapshot");
+      target = join(root, "snapshot"),
+      restored = join(root, "restored");
+    const key = backupKey("separate-secret");
     mkdirSync(source);
     new Store(join(source, "pey.sqlite"), "separate-secret").close();
     const device = new Database(join(source, "merchant-wa.db"));
     device.pragma("journal_mode = WAL");
-    device.exec("CREATE TABLE d(v TEXT); INSERT INTO d VALUES('keys')");
+    device.exec(
+      "CREATE TABLE d(v TEXT); INSERT INTO d VALUES('wa-session-key')",
+    );
     // The writer stays open, as a running sidecar would.
-    await backup(source, target);
+    await backup(source, target, { key });
     device.close();
-    expect(verifyBackup(target)).toEqual(["pey.sqlite", "merchant-wa.db"]);
-    const copy = new Database(join(target, "merchant-wa.db"), {
+    // No plaintext device keys anywhere in the backup.
+    for (const file of readdirSync(target))
+      expect(readFileSync(join(target, file)).includes("wa-session-key")).toBe(
+        false,
+      );
+    expect(readdirSync(target)).toContain("merchant-wa.db.enc");
+    expect(await verifyBackup(target, key)).toEqual([
+      "pey.sqlite",
+      "merchant-wa.db.enc",
+    ]);
+    await expect(verifyBackup(target)).rejects.toThrow(
+      "SESSION_ENCRYPTION_KEY",
+    );
+    await expect(verifyBackup(target, backupKey("wrong"))).rejects.toThrow();
+    expect(await restore(target, restored, key)).toEqual([
+      "pey.sqlite",
+      "merchant-wa.db",
+    ]);
+    const copy = new Database(join(restored, "merchant-wa.db"), {
       readonly: true,
     });
-    expect(copy.prepare("SELECT v FROM d").get()).toEqual({ v: "keys" });
+    expect(copy.prepare("SELECT v FROM d").get()).toEqual({
+      v: "wa-session-key",
+    });
     copy.close();
+    await expect(restore(target, restored, key)).rejects.toThrow("vacío");
     writeFileSync(join(target, "pey.sqlite"), "not a database");
-    expect(() => verifyBackup(target)).toThrow();
+    await expect(verifyBackup(target, key)).rejects.toThrow();
+    rmSync(root, { recursive: true });
+  });
+  it("refuses to back up device stores without a key and rejects stray plaintext copies", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pey-backup-"));
+    const source = join(root, "data"),
+      target = join(root, "snapshot");
+    mkdirSync(source);
+    new Store(join(source, "pey.sqlite"), "k").close();
+    new Database(join(source, "product-wa.db")).close();
+    await expect(backup(source, target)).rejects.toThrow(
+      "SESSION_ENCRYPTION_KEY",
+    );
+    expect(existsSync(target)).toBe(false);
+    await backup(source, target, { key: backupKey("k") });
+    writeFileSync(join(target, "product-wa.db"), "plain");
+    await expect(verifyBackup(target, backupKey("k"))).rejects.toThrow(
+      "sin cifrar",
+    );
     rmSync(root, { recursive: true });
   });
 });

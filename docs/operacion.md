@@ -87,12 +87,19 @@ Si OpenAI devuelve falta de saldo, el proceso avisa una vez y permite usar `COBR
 Detén el servicio antes del respaldo para conservar una sesión y base coherentes.
 
 ```bash
-npm run backup -- /ruta/data /ruta/respaldo-nuevo
+SESSION_ENCRYPTION_KEY=… npm run backup -- /ruta/data /ruta/respaldo-nuevo
+SESSION_ENCRYPTION_KEY=… npm run backup -- --verify /ruta/respaldo-nuevo
 ```
 
-La herramienta usa el respaldo SQLite, incluye `whatsapp.enc` si existe y exige un directorio de destino nuevo. No copia la clave de cifrado. La prueba automatizada restaura y descifra el contenido de un respaldo.
+La herramienta usa el respaldo SQLite, incluye `whatsapp.enc` si existe y exige un directorio de destino nuevo. Los almacenes de Whatsmeow (`*-wa.db`) solo se guardan cifrados como `*.enc`; sin `SESSION_ENCRYPTION_KEY` el respaldo se niega, y la verificación rechaza copias sin cifrar. No copia la clave. La prueba automatizada restaura y descifra el contenido. Ver [cifrado en reposo](cifrado-en-reposo.md).
 
-Para restaurar, con el servicio detenido copia los archivos del respaldo a un directorio vacío, configura ese directorio como `DATA_DIR` y conserva la misma clave e identidad. No sobrescribas una base activa.
+Para restaurar, con el servicio detenido:
+
+```bash
+SESSION_ENCRYPTION_KEY=… npm run backup -- --restore /ruta/respaldo /ruta/data-vacío
+```
+
+El destino debe estar vacío. Configura ese directorio como `DATA_DIR` y conserva la misma clave e identidad. No sobrescribas una base activa.
 
 ## Ejecutar el contenedor
 
