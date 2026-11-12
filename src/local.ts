@@ -107,6 +107,7 @@ export async function startLocal(
       who: "merchant" | "client",
       text: string,
       imageRef?: string,
+      extra: Partial<Observation> = {},
     ) {
       observe({
         session: "MERCHANT",
@@ -114,6 +115,7 @@ export async function startLocal(
         fromMe: who === "merchant",
         text,
         ...(imageRef ? { imageRef } : {}),
+        ...extra,
       });
       await runtime.step();
     },
