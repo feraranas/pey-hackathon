@@ -87,6 +87,8 @@ function toTransaction(value: z.infer<typeof transaction>): Transaction {
 export type PeyClientOptions = {
   apiKey: string;
   baseUrl?: string;
+  /** Permits plain HTTP, only to a loopback host: the local sandbox. */
+  allowLoopbackHttp?: boolean;
   timeoutMs?: number;
   fetch?: typeof fetch;
 };
@@ -98,8 +100,12 @@ export class PeyClient implements PeyPort {
   constructor(options: PeyClientOptions) {
     this.apiKey = nonempty.parse(options.apiKey);
     const url = new URL(options.baseUrl ?? "https://api.pey.mx");
+    const loopbackHttp =
+      options.allowLoopbackHttp === true &&
+      url.protocol === "http:" &&
+      ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname);
     if (
-      url.protocol !== "https:" ||
+      (url.protocol !== "https:" && !loopbackHttp) ||
       url.username ||
       url.password ||
       url.search ||

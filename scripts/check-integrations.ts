@@ -44,6 +44,7 @@ const results: unknown[] = [];
 for (const sample of samples) {
   const observations: Observation[] = sample.messages.map((m, i) => ({
     ...m,
+    session: "MERCHANT" as const,
     chatJid: "synthetic-test",
     messageId: `${sample.name}-${i}`,
     at: Date.now(),
