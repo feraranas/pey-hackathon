@@ -4,7 +4,7 @@ Objetivo: demostrar un cobro CoDi real, pequeño y autorizado, desde WhatsApp ha
 
 ## Alcance y estado
 
-Una sesión del comerciante; chat propio como control; chats individuales permitidos; aprobación explícita; QR fijo; webhook firmado y deduplicado; consulta a Pey y aviso de saldo. `COBRAR` es el camino mínimo; validar OpenAI después, sin bloquearlo. Dos números, audio y SaaS multiusuario quedan fuera de la primera entrega.
+Sesión del comerciante y número del producto como control; chats individuales permitidos; aprobación explícita; QR fijo; webhook firmado y deduplicado; consulta a Pey y aviso de saldo. `COBRAR` es el camino mínimo; validar OpenAI después, sin bloquearlo. Audio y SaaS multiusuario quedan fuera de la primera entrega. Desde el PR #8 el producto usa dos sesiones: el número del producto es el único canal de control y la sesión del comerciante lee los chats elegidos y envía los cobros autorizados. El estado por criterio está en [Entrega](entrega.md).
 
 El runtime llegó a `main` en el [PR #5](https://github.com/feraranas/pey-hackathon/pull/5). La VPS puede ejecutar otra versión: verificar su digest. Baileys recibió `passkey_prologue_request` sin completar la vinculación; WhatsApp Web oficial sí funcionó. Whatsmeow soporta el intercambio pero requiere firma WebAuthn y aún no se ha probado con esta cuenta. HTTPS y el rechazo de webhook sin firma se comprobaron; el pago integral y la cuenta `ACTIVE` siguen por verificar.
 

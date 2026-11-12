@@ -12,6 +12,8 @@ Nginx comparte la VPS con `media.ferarana.work` (muestras estáticas) y `logs.fe
 - Logs Docker: `none` para evitar persistir QR/códigos. Diagnóstico visible mediante attach privado.
 - Copias de sesiones: `/var/backups/pey-whatsapp/`; privadas, excluidas del repo.
 
+Para el transporte Whatsmeow con dos sesiones, consulta [Entrega](../../docs/entrega.md) y [compose.yaml](../../compose.yaml).
+
 ## Construcción y arranque reproducibles
 
 Desde la raíz del repositorio, en un entorno de construcción autorizado:
