@@ -34,6 +34,9 @@ export type Command =
       code?: string | null;
       quotedPromptId?: string | null;
       clientName?: string | null;
+      /** When the merchant sent the message. Plain Sí/No binds only to
+       * proposals whose prompt was delivered before this moment. */
+      sentAt?: number;
       messageId: string;
     }
   | { kind: "onboarding_data"; input: AccountInput; messageId: string }
@@ -698,7 +701,12 @@ export class Coordinator {
       }
       let i: Row | undefined;
       if (!c.code && !c.quotedPromptId) {
-        const open = this.openProposals();
+        const everyOpen = this.openProposals();
+        const sentAt = c.sentAt ?? this.now();
+        const open = everyOpen.filter((p) => {
+          const shown = this.promptShownAt(p.id);
+          return shown !== undefined && shown <= sentAt;
+        });
         const wanted = c.clientName?.trim().toLowerCase();
         const matching = wanted
           ? open.filter((p) =>
@@ -707,7 +715,9 @@ export class Coordinator {
           : open;
         if (!open.length) {
           this.notifyControl(
-            "No tengo ningún cobro pendiente de tu aprobación.",
+            everyOpen.length
+              ? "Tu respuesta llegó antes de que vieras el cobro actual, o el cobro cambió mientras respondías. Revisa la propuesta nueva y responde Sí o No otra vez."
+              : "No tengo ningún cobro pendiente de tu aprobación.",
             `no-open:${c.messageId}`,
           );
           return "rejected";
@@ -834,6 +844,24 @@ export class Coordinator {
       );
       return "accepted";
     })();
+  }
+  /** When the prompt for this proposal was acknowledged, if it was. */
+  promptShownAt(intentId: string): number | undefined {
+    return (
+      this.get(
+        "SELECT shown_at FROM prompt_seen WHERE intent_id=?",
+        intentId,
+      ) as { shown_at: number } | undefined
+    )?.shown_at;
+  }
+  private markPromptShown(job: Row): void {
+    const m = /^prompt:(.+)$/.exec(job.semantic_key);
+    if (m)
+      this.run(
+        "INSERT OR IGNORE INTO prompt_seen VALUES(?,?)",
+        m[1],
+        this.now(),
+      );
   }
   openProposals(): Row[] {
     return this.db
@@ -1369,6 +1397,7 @@ export class Coordinator {
           job.intent_id,
         );
       this.run("UPDATE jobs SET state='DONE' WHERE id=?", id);
+      if (job.kind === "deliver") this.markPromptShown(job);
     })();
   }
   failJob(id: string, uncertain: boolean): void {
@@ -1434,6 +1463,7 @@ export class Coordinator {
       )
         return;
       this.run("UPDATE jobs SET state='DONE' WHERE id=?", j.id);
+      this.markPromptShown(j);
       if (j.intent_id)
         this.run(
           "UPDATE intents SET delivery_state='DELIVERED' WHERE id=?",
