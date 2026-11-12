@@ -264,3 +264,18 @@ func TestPairingFramesAreReplayedToALateClientUntilConnected(t *testing.T) {
 		t.Fatalf("stale pairing frame replayed: %+v", f)
 	}
 }
+
+func TestCanonPNFoldsMexicoSpellings(t *testing.T) {
+	cases := map[string]string{
+		"5217715697632":  "527715697632",
+		"527715697632":   "527715697632",
+		"5215550000001":  "525550000001",
+		"14155550100":    "14155550100",
+		"52155500000011": "52155500000011",
+	}
+	for in, want := range cases {
+		if got := canonPN(in); got != want {
+			t.Errorf("canonPN(%s)=%s want %s", in, got, want)
+		}
+	}
+}
