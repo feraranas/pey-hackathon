@@ -35,20 +35,22 @@ async function account(
   wa: SimulatedWhatsApp,
 ) {
   runtime.accept({
+    session: "PRODUCT",
     chatJid: self,
     messageId: "alta",
-    fromMe: true,
+    fromMe: false,
     at: now,
     text: "ALTA Taller | Titular | 646180157034432952 | PERSON",
   });
   await runtime.drainJobs();
-  const code = wa.deliveries[0]!.text.match(/ACEPTO ([A-Z0-9]+)/)![1]!;
+  expect(wa.deliveries[0]!.text).toContain("Sí, autorizo");
   runtime.accept({
+    session: "PRODUCT",
     chatJid: self,
     messageId: "consent",
-    fromMe: true,
+    fromMe: false,
     at: now,
-    text: `ACEPTO ${code}`,
+    text: "Sí, autorizo",
   });
   await runtime.drainJobs();
   const a = c.listAccounts()[0]!;
@@ -61,11 +63,10 @@ describe("integrated runtime", () => {
     const output: string[] = [];
     const result = await runDemo((text) => output.push(text));
     expect(result.balance).toMatchObject({
-      verifiedCents: 60000,
-      cashCents: 10000,
-      pendingCents: 60000,
+      verifiedCents: 160000,
+      pendingCents: 0,
     });
-    expect(result.deliveries.filter((d) => d.qrString)).toHaveLength(1);
+    expect(result.deliveries.filter((d) => d.qrString)).toHaveLength(2);
     expect(output[0]).toContain("SIMULACIÓN");
   });
   it("persists pending extraction across restart without duplicating observations", async () => {
@@ -96,6 +97,7 @@ describe("integrated runtime", () => {
     };
     let runtime = new Runtime(c, ports, { debounceMs: 0, now: () => now });
     const observation = {
+      session: "MERCHANT" as const,
       chatJid: client,
       messageId: "m1",
       fromMe: false,
@@ -146,6 +148,7 @@ describe("integrated runtime", () => {
     );
     await account(c, runtime, pey, wa);
     runtime.accept({
+      session: "MERCHANT",
       chatJid: client,
       messageId: "quote",
       fromMe: true,
@@ -155,6 +158,7 @@ describe("integrated runtime", () => {
     const pending = runtime.step();
     await new Promise((r) => setTimeout(r, 0));
     runtime.accept({
+      session: "MERCHANT",
       chatJid: client,
       messageId: "changed",
       fromMe: true,
@@ -189,6 +193,7 @@ it("blocks the old approval immediately after a new merchant quote before extrac
   );
   await account(c, runtime, pey, wa);
   runtime.accept({
+    session: "MERCHANT",
     chatJid: client,
     messageId: "quote",
     fromMe: true,
@@ -196,6 +201,7 @@ it("blocks the old approval immediately after a new merchant quote before extrac
     text: "balatas 800 mano de obra 400 total 1200 anticipo 600",
   });
   runtime.accept({
+    session: "MERCHANT",
     chatJid: client,
     messageId: "agree",
     fromMe: false,
@@ -207,6 +213,7 @@ it("blocks the old approval immediately after a new merchant quote before extrac
     code: string;
   };
   runtime.accept({
+    session: "MERCHANT",
     chatJid: client,
     messageId: "changed",
     fromMe: true,
@@ -214,9 +221,10 @@ it("blocks the old approval immediately after a new merchant quote before extrac
     text: "Cambio el precio a 700",
   });
   runtime.accept({
+    session: "PRODUCT",
     chatJid: self,
     messageId: "old-approval",
-    fromMe: true,
+    fromMe: false,
     at: now,
     text: `SI ${row.code}`,
   });
@@ -242,6 +250,7 @@ it("stops automatic extraction after quota exhaustion and offers manual billing"
     { debounceMs: 0, now: () => now },
   );
   runtime.accept({
+    session: "MERCHANT",
     chatJid: client,
     messageId: "a",
     fromMe: true,
@@ -250,6 +259,7 @@ it("stops automatic extraction after quota exhaustion and offers manual billing"
   });
   await runtime.step();
   runtime.accept({
+    session: "MERCHANT",
     chatJid: client,
     messageId: "b",
     fromMe: false,
@@ -285,6 +295,7 @@ it("does not propose without an agreement even when amounts are complete", async
   );
   await account(c, runtime, pey, wa);
   runtime.accept({
+    session: "MERCHANT",
     chatJid: client,
     messageId: "quote",
     fromMe: true,
@@ -319,9 +330,10 @@ it("detects a missed webhook through authenticated reconciliation without invent
     accountId: a.id,
   });
   runtime.accept({
+    session: "PRODUCT",
     chatJid: self,
     messageId: "approve",
-    fromMe: true,
+    fromMe: false,
     at: now,
     text: `SI ${p.code}`,
   });
@@ -354,6 +366,7 @@ it("starts a new extraction context only from the authenticated owner command", 
     { debounceMs: 0, now: () => now },
   );
   runtime.accept({
+    session: "MERCHANT",
     chatJid: client,
     messageId: "a",
     fromMe: true,
@@ -361,6 +374,7 @@ it("starts a new extraction context only from the authenticated owner command", 
     text: "old work",
   });
   runtime.accept({
+    session: "MERCHANT",
     chatJid: client,
     messageId: "attack",
     fromMe: false,
@@ -371,9 +385,10 @@ it("starts a new extraction context only from the authenticated owner command", 
     c.db.prepare("SELECT COUNT(*) AS n FROM runtime_messages").get(),
   ).toEqual({ n: 2 });
   runtime.accept({
+    session: "PRODUCT",
     chatJid: self,
     messageId: "new",
-    fromMe: true,
+    fromMe: false,
     at: now,
     text: `NUEVA ${client}`,
   });
@@ -396,6 +411,7 @@ it("suspends the old approval immediately when the client corrects the quote", a
   );
   await account(c, runtime, pey, wa);
   runtime.accept({
+    session: "MERCHANT",
     chatJid: client,
     messageId: "quote",
     fromMe: true,
@@ -403,6 +419,7 @@ it("suspends the old approval immediately when the client corrects the quote", a
     text: "balatas 800 mano de obra 400 total 1200 anticipo 600",
   });
   runtime.accept({
+    session: "MERCHANT",
     chatJid: client,
     messageId: "agree",
     fromMe: false,
@@ -414,6 +431,7 @@ it("suspends the old approval immediately when the client corrects the quote", a
     code: string;
   };
   runtime.accept({
+    session: "MERCHANT",
     chatJid: client,
     messageId: "correction",
     fromMe: false,
@@ -421,9 +439,10 @@ it("suspends the old approval immediately when the client corrects the quote", a
     text: "No, acordamos 500",
   });
   runtime.accept({
+    session: "PRODUCT",
     chatJid: self,
     messageId: "old-approval",
-    fromMe: true,
+    fromMe: false,
     at: now,
     text: `SI ${row.code}`,
   });
@@ -449,6 +468,7 @@ it("does not send queued context to the extractor after allowlist removal", asyn
     { debounceMs: 0, now: () => now },
   );
   runtime.accept({
+    session: "MERCHANT",
     chatJid: client,
     messageId: "queued",
     fromMe: false,

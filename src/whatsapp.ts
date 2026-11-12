@@ -15,6 +15,7 @@ import pino from "pino";
 import QRCode from "qrcode";
 import {
   RemoteFailure,
+  type Channel,
   type Delivery,
   type Observation,
   type WhatsAppPort,
@@ -54,7 +55,12 @@ export function connectionDiagnostic(
 }
 export function parseObservation(
   message: RawMessage,
-  options: { ownJids: string[]; allowedJids: string[]; pairedAt: number },
+  options: {
+    session: Channel;
+    ownJids: string[];
+    allowedJids: string[];
+    pairedAt: number;
+  },
 ): Observation | null {
   const own = new Set(options.ownJids.map(normalizeJid).filter(Boolean));
   const allowed = new Set(
@@ -71,8 +77,7 @@ export function parseObservation(
     timestamp < options.pairedAt
   )
     return null;
-  const control = own.has(chatJid);
-  if (control ? !message.key?.fromMe : !allowed.has(chatJid)) return null;
+  if (own.has(chatJid) || !allowed.has(chatJid)) return null;
   const content =
     message.message?.ephemeralMessage?.message ??
     message.message?.viewOnceMessage?.message ??
@@ -85,6 +90,7 @@ export function parseObservation(
     "";
   if (!text && !content.imageMessage) return null;
   return {
+    session: options.session,
     chatJid,
     messageId,
     fromMe: !!message.key?.fromMe,
@@ -173,9 +179,10 @@ export async function encryptedAuthState(
 }
 
 export type WhatsAppOptions = {
+  session: Channel;
   authPath: string;
   encryptionKey: Buffer;
-  allowedJids: string[];
+  allowedJids: string[] | (() => string[]);
   expectedOwnJids: string[];
   pairedAt: number;
   ackTimeoutMs?: number;
@@ -311,14 +318,15 @@ export class BaileysWhatsApp implements WhatsAppPort {
       if (event.type !== "notify" && event.type !== "append") return;
       for (const raw of event.messages) {
         const observation = parseObservation(raw, {
+          session: this.options.session,
           ownJids: this.ownJids,
-          allowedJids: this.options.allowedJids,
+          allowedJids: this.allowed(),
           pairedAt: this.options.pairedAt,
         });
         if (!observation) continue;
         if (observation.fromMe)
           this.ack(observation.messageId, observation.chatJid);
-        const isControl = this.ownJids.includes(observation.chatJid);
+        const isControl = this.options.session === "PRODUCT";
         if (observation.fromMe)
           this.enqueue(() =>
             this.options.onEcho(observation.messageId, observation.chatJid),
@@ -354,6 +362,10 @@ export class BaileysWhatsApp implements WhatsAppPort {
       }
     });
   }
+  private allowed(): string[] {
+    const { allowedJids } = this.options;
+    return typeof allowedJids === "function" ? allowedJids() : allowedJids;
+  }
   private enqueue(action: () => void | Promise<void>): void {
     this.events = this.events.then(action).catch((error) => {
       this.options.onError?.(error);
@@ -375,12 +387,13 @@ export class BaileysWhatsApp implements WhatsAppPort {
   }
   async deliver(item: Delivery): Promise<void> {
     const jid = normalizeJid(item.recipientJid);
-    const allowed = this.options.allowedJids.map(normalizeJid);
+    const allowed = this.allowed().map(normalizeJid);
     if (
       !this.socket ||
       !this.ownJids.length ||
       !jid ||
-      (!this.ownJids.includes(jid) && !allowed.includes(jid))
+      this.ownJids.includes(jid) ||
+      !allowed.includes(jid)
     )
       throw new Error("WhatsApp recipient or owner identity is not authorized");
     if (!item.messageId) throw new Error("A persisted message ID is required");

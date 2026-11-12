@@ -118,8 +118,8 @@ La demo usa proveedores simulados. No demuestra conectividad con WhatsApp ni con
 1. Copia `.env.example` a un archivo privado fuera del repositorio, con permisos `0600`.
 2. Completa `PEY_API_KEY`, `PEY_API_KEY_ID`, `PEY_WEBHOOK_SECRET` y `OPENAI_API_KEY`. El ID de la API key no es la clave, el ID de la tienda ni el del QR. El secreto del webhook se obtiene al configurarlo en Pey.
 3. Genera `SESSION_ENCRYPTION_KEY` con `openssl rand -hex 32`. Respalda la clave por separado y no la regeneres al actualizar.
-4. Define `SELF_JID` como número del comerciante con código de país, sin `+`, seguido de `@s.whatsapp.net`. `ALLOWED_CHAT_JIDS` contiene los clientes permitidos separados por comas; no admite `*` ni el chat propio.
-5. Usa `WHATSAPP_PAIRING_MODE=qr` (predeterminado) o `code`. El código usa el número de `SELF_JID`. Ambos métodos siguen pendientes de validación en esta VPS.
+4. Define `MERCHANT_JID` (WhatsApp del comerciante; `SELF_JID` es alias) y `PRODUCT_JID` (número dedicado del producto), con código de país, sin `+`, seguidos de `@s.whatsapp.net`. Deben ser distintos. Los clientes se agregan por chat con el producto; `ALLOWED_CHAT_JIDS` es una lista inicial opcional que no admite `*` ni a esos dos números.
+5. Usa `WHATSAPP_PAIRING_MODE=qr` (predeterminado) o `code`. El código usa el número de cada sesión. Ambos métodos siguen pendientes de validación en esta VPS.
 6. Configura `DATA_DIR`, `PUBLIC_BASE_URL` y `MERCHANT_ID`. Este último es una identidad interna estable, no un ID de Pey.
 
 ```bash
@@ -127,7 +127,7 @@ npm run build
 node --env-file=/ruta/privada/pey.env dist/src/app.js
 ```
 
-Escanea desde **WhatsApp → Dispositivos vinculados**. Los QR y códigos de vinculación son privados. El servicio verifica la identidad y envía una comprobación al chat propio antes de habilitar comandos. Consulta la [guía de operación](docs/operacion.md) y el [despliegue en VPS](infra/pey/README.md).
+Escanea desde **WhatsApp → Dispositivos vinculados**. Los QR y códigos de vinculación son privados. El servicio verifica la identidad de las dos sesiones y envía una comprobación desde el número del producto al comerciante antes de habilitar comandos; nunca usa el chat del comerciante consigo mismo. Consulta la [guía de operación](docs/operacion.md) y el [despliegue en VPS](infra/pey/README.md).
 
 ## Cómo se cobra
 

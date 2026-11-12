@@ -59,7 +59,9 @@ export interface PeyPort {
     nextToken?: string,
   ): Promise<{ transactions: Transaction[]; nextToken?: string }>;
 }
+export type Channel = "PRODUCT" | "MERCHANT";
 export type Observation = {
+  session: Channel;
   chatJid: string;
   messageId: string;
   fromMe: boolean;
@@ -69,6 +71,7 @@ export type Observation = {
   imageRef?: string;
 };
 export type Delivery = {
+  channel: Channel;
   id: string;
   recipientJid: string;
   messageId: string;

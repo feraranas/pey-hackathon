@@ -5,7 +5,7 @@
 1. Usa Node 24.22.2 con `nvm use` y ejecuta `npm ci`.
 2. Copia `.env.example` a un archivo privado fuera del repositorio. Completa los valores.
 3. Genera `SESSION_ENCRYPTION_KEY` con `openssl rand -hex 32`. Conserva esa clave junto con los respaldos, en un lugar separado.
-4. Define `SELF_JID` con el número de WhatsApp del comerciante. Define `ALLOWED_CHAT_JIDS` con los chats individuales autorizados, separados por comas.
+4. Define `MERCHANT_JID` con el WhatsApp del comerciante (`SELF_JID` sigue aceptándose como alias) y `PRODUCT_JID` con el número dedicado del producto; deben ser distintos. Los clientes se eligen por chat con el producto («agrega a Ana 5215550000002»); `ALLOWED_CHAT_JIDS` es solo una lista inicial opcional. `OPENAI_API_KEY` es opcional: sin ella se usa el extractor determinista en español.
 5. Configura en el portal de pey el webhook `https://tu-dominio/webhooks/pey`. Usa su secreto `whsec_` y el `PEY_API_KEY_ID` esperado. El ID no es la clave secreta.
 6. Pon un proxy HTTPS delante del servicio. `PUBLIC_BASE_URL` declara ese dominio; el proceso escucha HTTP en `HOST` y `PORT`.
 
@@ -20,9 +20,9 @@ npm run build
 node --env-file=/ruta/privada/pey.env dist/src/app.js
 ```
 
-Escanea el QR de vinculación que aparece en la terminal desde el teléfono configurado. Ese QR es privado. No lo publiques ni lo guardes en logs compartidos.
+Hay dos sesiones y cada una imprime su propio QR privado: `PRODUCT` (número del producto, `whatsapp-product.enc`) y `MERCHANT` (WhatsApp del comerciante, `whatsapp.enc`). Escanea cada QR desde el teléfono correspondiente. No lo publiques ni lo guardes en logs compartidos.
 
-El servicio verifica que el número de la sesión coincide con `SELF_JID`. Envía una comprobación al chat del dueño con un ID reservado. Solo después de confirmar ese ID habilita comandos; conserva los comandos recibidos durante esa comprobación para procesarlos después. En una reconexión vuelve a comprobarlo. Los alias LID descubiertos se guardan para reconocer el chat propio.
+Cada sesión verifica que su número coincide con la configuración. La sesión `PRODUCT` envía una comprobación al comerciante con un ID reservado y solo después de confirmarla habilita comandos; conserva los recibidos durante la comprobación. Todo el control (alta, propuestas, «Sí», avisos) ocurre en el chat entre el comerciante y el número del producto, nunca en el chat del comerciante consigo mismo. La sesión `MERCHANT` lee solo los chats de clientes elegidos y envía solo cobros autorizados; nada que lea ahí es un comando.
 
 El servicio lee únicamente los chats configurados. Un mensaje de un cliente nunca autoriza un cobro. Un texto del comerciante en el chat de un cliente aporta contexto, pero tampoco autoriza. Las notas de voz quedan fuera de esta entrega.
 
@@ -30,11 +30,11 @@ El servicio lee únicamente los chats configurados. Un mensaje de un cliente nun
 
 ## Dar de alta la cuenta y cobrar
 
-Escribe los comandos en el chat contigo mismo. Sustituye los ejemplos por tus datos reales.
+Escribe «hola» al número del producto. El agente pregunta alias, nombre legal, CLABE y tipo de persona, muestra la CLABE enmascarada y advierte que la activación puede tardar hasta cinco días hábiles. Solo registra la cuenta tras «Sí, autorizo». Atajo equivalente:
 
 ```text
 ALTA Taller | Nombre legal del titular | CLABE de 18 dígitos | PERSON
-ACEPTO código-recibido
+Sí, autorizo
 ```
 
 `BUSINESS` identifica una empresa. El primer mensaje solo prepara una confirmación con CLABE enmascarada. El segundo registra la cuenta. Una cuenta `PENDING` no puede cobrar; la activación puede tardar hasta cinco días hábiles. El servicio consulta el estado cada minuto y también procesa el webhook de activación.

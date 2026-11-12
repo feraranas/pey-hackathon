@@ -18,6 +18,8 @@ export class Store {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS merchants(id TEXT PRIMARY KEY, self_jids TEXT NOT NULL, control_jid TEXT NOT NULL, paired_at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS chats(merchant_id TEXT NOT NULL, jid TEXT NOT NULL, PRIMARY KEY(merchant_id,jid));
+      CREATE TABLE IF NOT EXISTS clients(merchant_id TEXT NOT NULL, jid TEXT NOT NULL, name TEXT NOT NULL, PRIMARY KEY(merchant_id,jid));
+      CREATE TABLE IF NOT EXISTS onboarding(merchant_id TEXT PRIMARY KEY, step TEXT NOT NULL, data_enc TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS events(chat_jid TEXT NOT NULL, message_id TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY(chat_jid,message_id));
       CREATE TABLE IF NOT EXISTS cursor(merchant_id TEXT PRIMARY KEY, last_at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS accounts(id TEXT PRIMARY KEY, merchant_id TEXT NOT NULL, data_enc TEXT NOT NULL, status TEXT NOT NULL, provider_id TEXT UNIQUE, consent_id TEXT, UNIQUE(id,merchant_id), FOREIGN KEY(merchant_id) REFERENCES merchants(id));

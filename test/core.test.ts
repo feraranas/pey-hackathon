@@ -95,6 +95,7 @@ describe("coordinator", () => {
     const p = proposal();
     expect(
       c.observe({
+        session: "MERCHANT",
         chatJid: "ana",
         messageId: "client",
         fromMe: false,
@@ -102,23 +103,25 @@ describe("coordinator", () => {
         text: `SI ${p.code}`,
       }),
     ).toBe("accepted");
-    expect(c.command({ kind: "approve", messageId: "bare" })).toBe(
-      "clarification",
-    );
+    expect(
+      c.command({ kind: "approve", clientName: "Luis", messageId: "bare" }),
+    ).toBe("clarification");
     expect(
       c.observe({
+        session: "PRODUCT",
         chatJid: "me",
         messageId: "approve",
-        fromMe: true,
+        fromMe: false,
         at: now,
         text: `SI ${p.code}`,
       }),
     ).toBe("accepted");
     expect(
       c.observe({
+        session: "PRODUCT",
         chatJid: "me",
         messageId: "approve",
-        fromMe: true,
+        fromMe: false,
         at: now,
         text: `SI ${p.code}`,
       }),
@@ -204,9 +207,10 @@ describe("recovery and identity", () => {
     const p = proposal();
     expect(
       c.observe({
+        session: "PRODUCT",
         chatJid: "me",
         messageId: p.promptId,
-        fromMe: true,
+        fromMe: false,
         at: now,
         text: `SI ${p.code}`,
       }),
@@ -399,9 +403,10 @@ it("creates a manual proposal without implicitly authorizing it", () => {
   const { s, c } = setup();
   expect(
     c.observe({
+      session: "PRODUCT",
       chatJid: "me",
       messageId: "manual",
-      fromMe: true,
+      fromMe: false,
       at: now,
       text: "COBRAR ana | balatas | 600 | 1200",
     }),
@@ -563,6 +568,7 @@ it("rejects other merchants accounts, invalid CLABEs and unallowed chat content"
   c.setAllowedChats(["bob"]);
   expect(
     c.observe({
+      session: "MERCHANT",
       chatJid: "ana",
       messageId: "private",
       fromMe: false,
@@ -644,18 +650,20 @@ it("persists trusted self aliases and rejects binding a different primary", () =
   });
   expect(
     restarted.observe({
+      session: "PRODUCT",
       chatJid: "lid",
       messageId: "alias",
-      fromMe: true,
+      fromMe: false,
       at: now,
       text: "AYUDA",
     }),
   ).toBe("accepted");
   expect(
     restarted.observe({
+      session: "PRODUCT",
       chatJid: "other",
       messageId: "wrong",
-      fromMe: true,
+      fromMe: false,
       at: now,
       text: "AYUDA",
     }),
@@ -744,6 +752,7 @@ it("starts a new order context only for an allowed chat", () => {
   const p = proposal();
   expect(
     c.observe({
+      session: "MERCHANT",
       chatJid: "ana",
       messageId: "client-new",
       fromMe: false,
@@ -753,17 +762,19 @@ it("starts a new order context only for an allowed chat", () => {
   ).toBe("accepted");
   expect(c.getIntent(p.intentId)?.approval_state).toBe("PROPOSED");
   c.observe({
+    session: "PRODUCT",
     chatJid: "me",
     messageId: "bad-new",
-    fromMe: true,
+    fromMe: false,
     at: now,
     text: "NUEVA unknown",
   });
   expect(c.getIntent(p.intentId)?.approval_state).toBe("PROPOSED");
   c.observe({
+    session: "PRODUCT",
     chatJid: "me",
     messageId: "good-new",
-    fromMe: true,
+    fromMe: false,
     at: now,
     text: "NUEVA ana",
   });
@@ -771,7 +782,7 @@ it("starts a new order context only for an allowed chat", () => {
   expect(
     s.db
       .prepare(
-        "SELECT COUNT(*) AS n FROM jobs WHERE semantic_key='new-order:good-new'",
+        "SELECT COUNT(*) AS n FROM jobs WHERE semantic_key='reply:good-new'",
       )
       .get(),
   ).toEqual({ n: 1 });

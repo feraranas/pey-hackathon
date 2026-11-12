@@ -75,7 +75,7 @@ export class SimulatedWhatsApp implements WhatsAppPort {
   async deliver(delivery: Delivery) {
     this.deliveries.push({ ...delivery });
     this.output?.(
-      `[SIMULACIÓN] → ${delivery.recipientJid}: ${delivery.qrString ? "[QR ficticio] " : ""}${delivery.text}`,
+      `[SIMULACIÓN ${delivery.channel === "PRODUCT" ? "número del producto" : "WhatsApp del comerciante"}] → ${delivery.recipientJid.split("@")[0]}: ${delivery.qrString ? "[QR ficticio] " : ""}${delivery.text}`,
     );
   }
 }
