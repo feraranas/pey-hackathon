@@ -27,6 +27,7 @@ export class Store {
       CREATE TABLE IF NOT EXISTS orders(id TEXT PRIMARY KEY, merchant_id TEXT NOT NULL, chat_jid TEXT NOT NULL, account_id TEXT NOT NULL, revision INTEGER NOT NULL, FOREIGN KEY(account_id,merchant_id) REFERENCES accounts(id,merchant_id));
       CREATE TABLE IF NOT EXISTS versions(order_id TEXT NOT NULL, revision INTEGER NOT NULL, lines TEXT NOT NULL, total INTEGER, PRIMARY KEY(order_id,revision));
       CREATE TABLE IF NOT EXISTS intents(id TEXT PRIMARY KEY, code TEXT UNIQUE NOT NULL, order_id TEXT NOT NULL, revision INTEGER NOT NULL, recipient TEXT NOT NULL, account_id TEXT NOT NULL, snapshot TEXT NOT NULL, digest TEXT NOT NULL, expires_at INTEGER NOT NULL, approval_state TEXT NOT NULL, creation_state TEXT NOT NULL, delivery_state TEXT NOT NULL, payment_state TEXT NOT NULL, prompt_id TEXT UNIQUE NOT NULL, UNIQUE(id,recipient));
+      CREATE TABLE IF NOT EXISTS prompt_seen(intent_id TEXT PRIMARY KEY, shown_at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS approvals(intent_id TEXT PRIMARY KEY, message_id TEXT UNIQUE NOT NULL, digest TEXT NOT NULL, at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS charges(intent_id TEXT PRIMARY KEY, num_ref TEXT UNIQUE NOT NULL, qr_id TEXT UNIQUE, qr_enc TEXT);
       CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY, kind TEXT NOT NULL, semantic_key TEXT UNIQUE NOT NULL, intent_id TEXT, recipient TEXT, message_id TEXT UNIQUE, payload_enc TEXT NOT NULL, state TEXT NOT NULL, FOREIGN KEY(intent_id,recipient) REFERENCES intents(id,recipient));

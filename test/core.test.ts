@@ -93,6 +93,7 @@ describe("coordinator", () => {
   it("requires an exact authorized control command and applies each transaction once", () => {
     const { c, proposal } = setup();
     const p = proposal();
+    for (let job; (job = c.claimJob());) c.completeJob(job.id);
     expect(
       c.observe({
         session: "MERCHANT",

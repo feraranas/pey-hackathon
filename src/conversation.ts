@@ -149,6 +149,7 @@ export function converse(c: Coordinator, o: Observation): void {
       kind: negative ? "reject" : "approve",
       clientName: m[1] ?? null,
       quotedPromptId: o.quotedMessageId,
+      sentAt: o.at,
       messageId: o.messageId,
     });
     return;
@@ -158,6 +159,7 @@ export function converse(c: Coordinator, o: Observation): void {
       kind: /^NO/i.test(text) ? "reject" : "approve",
       code: m[1]!.toUpperCase(),
       quotedPromptId: o.quotedMessageId,
+      sentAt: o.at,
       messageId: o.messageId,
     });
     return;

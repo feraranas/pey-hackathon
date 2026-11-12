@@ -106,3 +106,7 @@ docker run --rm -it --name pey-mvp \
 ```
 
 El contenedor corre como usuario sin privilegios. Usa un volumen propio y un proxy HTTPS. La construcción local del contenedor no despliega ningún servicio público.
+
+## A qué cobro se liga un «Sí»
+
+Un «Sí» o «No» sin código solo se liga a un cobro cuya propuesta ya se te entregó. La app registra cuándo el servidor confirmó la entrega de cada propuesta (`prompt_seen`) y compara ese momento con la hora de tu mensaje. Si tu «Sí» salió antes de ver la propuesta vigente, por ejemplo porque el precio cambió mientras respondías, no autoriza nada y la app te pide responder otra vez. Si dos clientes esperan y viste ambos, la app pregunta cuál. Si no se pudo confirmar la entrega, el «Sí» se rechaza. Citar el mensaje de la propuesta o escribir `SI CÓDIGO` sigue identificando un cobro exacto. La hora del mensaje llega con precisión de segundos, así que una respuesta humana siempre queda después de la entrega.
