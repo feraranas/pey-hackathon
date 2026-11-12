@@ -10,13 +10,16 @@ export const merchant = "5215550000001@s.whatsapp.net",
   luis = "5215550000003@s.whatsapp.net";
 export const now = 1_800_000_000_000;
 
-export function harness(clock: { t: number } = { t: now }) {
+export function harness(
+  clock: { t: number } = { t: now },
+  options: { dailySummary?: { hour: number; timeZone?: string } } = {},
+) {
   const store = new Store(":memory:", "k");
   const c = new Coordinator(store, {
     merchantId: "m",
     selfJids: [merchant],
     controlChatJid: merchant,
-    pairedAt: now - 1000,
+    pairedAt: clock.t - 1000,
     now: () => clock.t,
   });
   const pey = new SimulatedPey(),
@@ -24,7 +27,7 @@ export function harness(clock: { t: number } = { t: now }) {
   const runtime = new Runtime(
     c,
     { pey, whatsapp: wa, extractor: new RuleExtractor() },
-    { debounceMs: 0, now: () => clock.t },
+    { debounceMs: 0, now: () => clock.t, ...options },
   );
   let n = 0;
   const product = async (text: string, extra: Partial<Observation> = {}) => {

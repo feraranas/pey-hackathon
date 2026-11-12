@@ -201,6 +201,14 @@ export async function main() {
       debounceMs: config.EXTRACTION_DELAY_MS,
       logger,
       canDeliver: () => whatsapp.ready,
+      ...(config.SUMMARY_HOUR === undefined
+        ? {}
+        : {
+            dailySummary: {
+              hour: config.SUMMARY_HOUR,
+              timeZone: config.SUMMARY_TIMEZONE,
+            },
+          }),
     },
   );
   const server = createServer({

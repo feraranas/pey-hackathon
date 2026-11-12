@@ -63,7 +63,7 @@ describe("plain «Sí» binds to the current immutable proposal", () => {
     const h = harness();
     await h.activate();
     await h.quote(ana, 1200);
-    expect(h.sent(/¿Le envío a Ana el cobro de \$1200\.00/)).toHaveLength(1);
+    expect(h.sent(/¿Le envío a Ana el cobro de \$1,200\.00/)).toHaveLength(1);
     await h.chat(ana, false, "Sí, mándalo");
     expect(h.pey.charges.size).toBe(0);
     await h.product("Sí");

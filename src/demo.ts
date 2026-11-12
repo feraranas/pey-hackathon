@@ -155,7 +155,7 @@ export async function runDemo(output: (text: string) => void = console.log) {
       "Luis, balatas 800 y mano de obra 400, total 1200. Anticipo 1200.",
     );
     await chat(luis, "cliente", "Va");
-    assert.match(last(/¿Le envío a Luis/)!.text, /\$1200\.00/);
+    assert.match(last(/¿Le envío a Luis/)!.text, /\$1,200\.00/);
     await chat(
       luis,
       "Rafa",

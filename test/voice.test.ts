@@ -119,7 +119,7 @@ describe("voice notes in the flow", () => {
       voice: "transcribed",
     });
     await h.chat(ana, false, "Va");
-    expect(h.sent(/\$1200\.00 MXN/)).toHaveLength(1);
+    expect(h.sent(/\$1,200\.00 MXN/)).toHaveLength(1);
   });
   it("an unreadable voice note asks the merchant to type the price and proposes nothing", async () => {
     const h = harness();

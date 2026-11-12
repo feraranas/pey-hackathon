@@ -1417,11 +1417,13 @@ export class Coordinator {
           "Cuenta registrada en pey. La activación puede tardar hasta cinco días hábiles; te aviso cuando esté activa. Mientras tanto agrega los clientes cuyos chats quieres que lea, por ejemplo «agrega a Ana 5215550000002».",
           `account:${payload.accountId}:registered`,
         );
-      } else if (job.intent_id)
+      } else if (job.intent_id) {
         this.run(
           "UPDATE intents SET delivery_state='DELIVERED' WHERE id=?",
           job.intent_id,
         );
+        this.confirmSent(job.intent_id);
+      }
       this.run("UPDATE jobs SET state='DONE' WHERE id=?", id);
       if (job.kind === "deliver") this.markPromptShown(job);
     })();
@@ -1490,12 +1492,22 @@ export class Coordinator {
         return;
       this.run("UPDATE jobs SET state='DONE' WHERE id=?", j.id);
       this.markPromptShown(j);
-      if (j.intent_id)
+      if (j.intent_id) {
         this.run(
           "UPDATE intents SET delivery_state='DELIVERED' WHERE id=?",
           j.intent_id,
         );
+        this.confirmSent(j.intent_id);
+      }
     })();
+  }
+  private confirmSent(intentId: string): void {
+    const i = this.get("SELECT * FROM intents WHERE id=?", intentId);
+    if (!i) return;
+    this.notifyControl(
+      `Listo ✅ Le envié a ${this.clientLabel(i.recipient)} el cobro de $${formatPesos(JSON.parse(i.snapshot).amountCents)}. Aún no está pagado: te aviso cuando pey confirme el pago.`,
+      `sent:${intentId}`,
+    );
   }
   tick(now: number): void {
     this.run(

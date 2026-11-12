@@ -1,3 +1,4 @@
+import { buildSummary } from "./summary.js";
 import type { AccountInput, Observation } from "./contracts.js";
 import { formatPesos, parsePesos } from "./contracts.js";
 import type { Coordinator } from "./coordinator.js";
@@ -8,7 +9,7 @@ type Step = "ALIAS" | "NAME" | "CLABE" | "ENTITY";
 const STEPS: Step[] = ["ALIAS", "NAME", "CLABE", "ENTITY"];
 
 const HELP =
-  "Esto puedo hacer por ti: «agrega a Ana 5215550000002» (clientes cuyo chat leo), «quita a Ana», «mis clientes», «cobra 600 a Ana por balatas, total 1200», responder Sí o No a un cobro propuesto, «estado» de tu cuenta.";
+  "Esto puedo hacer por ti: «agrega a Ana 5215550000002» (clientes cuyo chat leo), «quita a Ana», «mis clientes», «cobra 600 a Ana por balatas, total 1200», responder Sí o No a un cobro propuesto, «resumen» de hoy, «estado» de tu cuenta.";
 const fold = (value: string) =>
   value
     .normalize("NFD")
@@ -293,6 +294,17 @@ export function converse(c: Coordinator, o: Observation): void {
       list.length
         ? `Leo estos chats: ${list.map((x) => x.name).join(", ")}.`
         : "Todavía no has elegido clientes. Escribe «agrega a Ana 5215550000002».",
+    );
+    return;
+  }
+  if (
+    /^¿?(?:resumen(?:\s+(?:de\s+)?hoy)?|c[oó]mo\s+voy(?:\s+hoy)?|cobros\s+de\s+hoy|qu[eé]\s+me\s+deben)[?!.\s]*$/i.test(
+      text,
+    )
+  ) {
+    reply(
+      buildSummary(c, { now: c.currentTime() }) ??
+        "Hoy todavía no hay cobros. Cuando un cliente acepte un precio, te propongo el cobro.",
     );
     return;
   }

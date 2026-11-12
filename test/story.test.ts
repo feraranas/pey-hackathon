@@ -25,11 +25,15 @@ describe("the Rafa, Ana and Luis story", () => {
       "Te queda así:\nBalatas delanteras $800\nMano de obra $400\nTotal $1,200",
     );
     await h.chat(ana, false, "Va, dale 👍 ¿Cómo te pago?");
-    expect(h.sent(/¿Le envío a .*5215550000002.*\$1200\.00/)).toHaveLength(0);
-    expect(h.sent(/\$1200\.00 MXN/)).toHaveLength(1);
+    expect(h.sent(/\$1,200\.00 MXN/)).toHaveLength(1);
     clock.t += 1000;
     await h.product("Sí");
     expect(state(ana)).toEqual(["APPROVED"]);
+    expect(
+      h.sent(
+        /Listo ✅ Le envié a Ana el cobro de \$1,200\.00\. Aún no está pagado/,
+      ),
+    ).toHaveLength(1);
     const [anaQr] = [...h.pey.charges.keys()];
     h.pey.pay(anaQr!);
     // The pey webhook is what pays, not anything Ana says.
@@ -54,7 +58,7 @@ describe("the Rafa, Ana and Luis story", () => {
     await h.chat(luis, true, voice.text, { voice: "transcribed" });
     await h.chat(luis, false, "Va, hazle 👍");
     clock.t += 1000;
-    expect(h.sent(/\$1500\.00 MXN/)).toHaveLength(1);
+    expect(h.sent(/\$1,500\.00 MXN/)).toHaveLength(1);
 
     // Rafa corrects the price before answering the agent.
     clock.t += 1000;
@@ -68,7 +72,7 @@ describe("the Rafa, Ana and Luis story", () => {
     const update = h.sent(/Actualicé el cobro de Luis/);
     expect(update).toHaveLength(1);
     expect(update[0]!.text).toMatch(
-      /\$1600\.00.*Aceite sintético \$1000\.00 \+ filtro \$250\.00 \+ mano de obra \$350\.00.*Descarté la cotización anterior de \$1500\.00; no se envió nada/i,
+      /\$1,600\.00.*Aceite sintético \$1,000\.00 \+ filtro \$250\.00 \+ mano de obra \$350\.00.*Descarté la cotización anterior de \$1,500\.00; no se envió nada/i,
     );
     // A «Sí» typed before the update was shown cannot approve the new price.
     await h.product("Sí", { at: clock.t - 5000 });
@@ -101,7 +105,17 @@ describe("the Rafa, Ana and Luis story", () => {
       });
     }
     await h.runtime.step();
-    expect(h.sent(/Recibiste \$1200\.00 de Ana/)).toHaveLength(1);
-    expect(h.sent(/Recibiste \$1600\.00 de Luis/)).toHaveLength(1);
+    expect(h.sent(/Recibiste \$1,200\.00 de Ana/)).toHaveLength(1);
+    expect(h.sent(/Recibiste \$1,600\.00 de Luis/)).toHaveLength(1);
+    await h.product("¿Cómo voy hoy?");
+    const summary = h.sent(/Cobros de hoy/).at(-1)!.text;
+    expect(summary.split("\n").slice(1)).toEqual([
+      "*Cobros de hoy*",
+      "✅ Ana · $1,200.00",
+      "✅ Luis · $1,600.00",
+      "Cotización anterior de Luis ($1,500.00): descartada, no se envió",
+      "*Confirmado por pey: $2,800.00*",
+      "Pendiente por cobrar: $0.00",
+    ]);
   });
 });
