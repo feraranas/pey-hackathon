@@ -69,6 +69,32 @@ const event = z.discriminatedUnion("type", [
   }),
 ]);
 
+/** Estado de un link de pago según la API de pey (`partial` = pago parcial). */
+export type PaymentLinkStatus = "pending" | "processing" | "paid" | "partial";
+export type PaymentLink = {
+  id: string;
+  amountCents: number;
+  status: PaymentLinkStatus;
+  clientReferenceId?: string;
+  transactions: { id: string; amountCents: number; datePaid?: number }[];
+};
+const paymentLinkResponse = z.object({
+  id: nonempty,
+  amount: z.number().nonnegative().finite(),
+  status: z.enum(["pending", "processing", "paid", "partial"]),
+  clientReferenceId: z.string().optional(),
+  transactions: z
+    .array(
+      z.object({
+        transactionId: nonempty,
+        amount: z.number().nonnegative().finite(),
+        datePaid: z.number().int().nonnegative().safe().nullable().optional(),
+      }),
+    )
+    .optional(),
+});
+const positiveCents = z.number().int().positive().safe();
+
 function toTransaction(value: z.infer<typeof transaction>): Transaction {
   return {
     id: value.id,
@@ -280,6 +306,182 @@ export class PeyClient implements PeyPort {
     );
     if (transactions.some((item) => item.payableId !== id))
       throw new RemoteFailure("Pey QR identity mismatch", false);
+    return {
+      transactions,
+      ...(page.nextToken ? { nextToken: page.nextToken } : {}),
+    };
+  }
+
+  /** POST /codi/qr; sin `bankAccountId` paga a la cuenta CoDi ligada a la clave. */
+  async createCodiQr(input: {
+    amountCents: number;
+    concept: string;
+    expiration: number;
+    numRef: string;
+    bankAccountId?: string;
+    metadata?: Record<string, string | number | boolean>;
+  }) {
+    const data = z
+      .object({
+        amountCents: positiveCents,
+        concept: nonempty,
+        expiration: z.number().int().min(360).safe(),
+        numRef: z.string().regex(/^\d{1,7}$/),
+        bankAccountId: nonempty.optional(),
+        metadata: z
+          .record(
+            z.string().max(40),
+            z.union([z.string().max(500), z.number(), z.boolean()]),
+          )
+          .optional(),
+      })
+      .strict()
+      .parse(input);
+    return this.parse(
+      z.object({ id: nonempty, qrString: nonempty }),
+      await this.request("/codi/qr", "POST", {
+        amount: data.amountCents / 100,
+        concept: data.concept,
+        expiration: data.expiration,
+        numRef: data.numRef,
+        generateImage: false,
+        ...(data.bankAccountId ? { bankAccountId: data.bankAccountId } : {}),
+        ...(data.metadata ? { metadata: data.metadata } : {}),
+      }),
+      true,
+    );
+  }
+  /** POST /codi/pn: solicitud de pago CoDi al teléfono del pagador. */
+  async createPush(input: {
+    amountCents: number;
+    phoneNumber: string;
+    concept: string;
+    expiration: number;
+    numRef: string;
+    bankAccountId?: string;
+  }) {
+    const data = z
+      .object({
+        amountCents: positiveCents.max(100_000_000),
+        phoneNumber: z.string().regex(/^\d{10}$/),
+        concept: nonempty,
+        expiration: z.number().int().min(360).safe(),
+        numRef: z.string().regex(/^\d{1,7}$/),
+        bankAccountId: nonempty.optional(),
+      })
+      .strict()
+      .parse(input);
+    const result = this.parse(
+      z.object({ transactionId: nonempty, codiId: z.string().optional() }),
+      await this.request("/codi/pn", "POST", {
+        amount: data.amountCents / 100,
+        phoneNumber: data.phoneNumber,
+        concept: data.concept,
+        expiration: data.expiration,
+        numRef: data.numRef,
+        ...(data.bankAccountId ? { bankAccountId: data.bankAccountId } : {}),
+      }),
+      true,
+    );
+    return {
+      transactionId: result.transactionId,
+      ...(result.codiId ? { codiId: result.codiId } : {}),
+    };
+  }
+  /** POST /payment-link/create (sin propina). */
+  async createPaymentLink(input: {
+    amountCents: number;
+    successUrl: string;
+    backUrl: string;
+    clientReferenceId?: string;
+  }) {
+    const data = z
+      .object({
+        amountCents: positiveCents,
+        successUrl: z.string().url().startsWith("https://"),
+        backUrl: z.string().url().startsWith("https://"),
+        clientReferenceId: z.string().min(1).max(255).optional(),
+      })
+      .strict()
+      .parse(input);
+    return this.parse(
+      z.object({ id: nonempty, url: nonempty }),
+      await this.request("/payment-link/create", "POST", {
+        amount: data.amountCents / 100,
+        successUrl: data.successUrl,
+        backUrl: data.backUrl,
+        hasTip: false,
+        ...(data.clientReferenceId
+          ? { clientReferenceId: data.clientReferenceId }
+          : {}),
+      }),
+      true,
+    );
+  }
+  /** GET /payment-link/{id}. */
+  async getPaymentLink(id: string): Promise<PaymentLink> {
+    nonempty.parse(id);
+    const result = this.parse(
+      paymentLinkResponse,
+      await this.request(`/payment-link/${encodeURIComponent(id)}`, "GET"),
+      false,
+    );
+    if (result.id !== id)
+      throw new RemoteFailure("Pey payment link identity mismatch", false);
+    try {
+      return {
+        id: result.id,
+        amountCents: parsePesos(result.amount),
+        status: result.status,
+        ...(result.clientReferenceId
+          ? { clientReferenceId: result.clientReferenceId }
+          : {}),
+        transactions: (result.transactions ?? []).map((t) => ({
+          id: t.transactionId,
+          amountCents: parsePesos(t.amount),
+          ...(t.datePaid != null ? { datePaid: t.datePaid } : {}),
+        })),
+      };
+    } catch {
+      throw new RemoteFailure("Invalid Pey payment link amount", false);
+    }
+  }
+  /**
+   * Solo lectura: transacciones completas, de la más reciente a la más
+   * antigua, por clave de API (GET /transaction/api-key) o por cuenta
+   * (GET /transaction/bank-account/{id}).
+   */
+  async listTransactions(
+    source: { bankAccountId?: string },
+    nextToken?: string,
+  ): Promise<{ transactions: Transaction[]; nextToken?: string }> {
+    if (nextToken !== undefined) nonempty.parse(nextToken);
+    const query =
+      nextToken === undefined ? "" : `?${new URLSearchParams({ nextToken })}`;
+    const path = source.bankAccountId
+      ? `/transaction/bank-account/${encodeURIComponent(source.bankAccountId)}`
+      : "/transaction/api-key";
+    const page = this.parse(
+      z.object({
+        items: z.array(z.object({ id: nonempty }).passthrough()),
+        nextToken: nonempty.nullable().optional(),
+      }),
+      await this.request(`${path}${query}`, "GET"),
+      false,
+    );
+    // La API devuelve la transacción completa; si un elemento viniera
+    // incompleto, se consulta por separado.
+    const transactions = await Promise.all(
+      page.items.map(async (item) => {
+        const full = transaction.safeParse(item);
+        if (!full.success) return this.getTransaction(item.id);
+        try {
+          return toTransaction(full.data);
+        } catch {
+          throw new RemoteFailure("Invalid Pey transaction amount", false);
+        }
+      }),
+    );
     return {
       transactions,
       ...(page.nextToken ? { nextToken: page.nextToken } : {}),
