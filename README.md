@@ -45,6 +45,7 @@ Ver el [flujo completo en pantallas](docs/ux/README.md) (maquetas ilustrativas c
 | [docs/decisiones.md](docs/decisiones.md) | Alternativas comparadas y razones |
 | [docs/diagramas.md](docs/diagramas.md) | Arquitectura, flujo de extremo a extremo y cuatro diagramas de estado |
 | [docs/demo.md](docs/demo.md) | Guía para jueces: `npm run demo:story`, qué es real y qué es simulado, y la salida completa |
+| [docs/explorador.md](docs/explorador.md) | Explorador visual de la API de pey: una tarjeta por endpoint y webhook, `npm run explorer` |
 | [docs/ux/README.md](docs/ux/README.md) | Flujo en 17 maquetas: alta con el número del producto, Rafa con su agente, dos clientes y el checkout CoDi (datos ficticios) |
 
 ## Stack sugerido

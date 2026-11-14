@@ -15,6 +15,7 @@
     "demo": "node --import tsx src/demo.ts",
     "local": "node --import tsx src/local.ts",
     "demo:story": "node --import tsx src/story-demo.ts",
+    "explorer": "node --import tsx src/explorer.ts",
     "backup": "node --import tsx src/backup.ts",
     "verify": "npm run format:check && npm run check && npm test && npm run build && npm run demo && npm run demo:story && python3 scripts/check-links.py",
     "pey:smoke": "node --import tsx scripts/pey-smoke.ts",

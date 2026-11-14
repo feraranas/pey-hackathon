@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Explorador de la API de pey</title>
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="top-inner">
+        <div>
+          <h1>Explorador de la API de pey</h1>
+          <p class="lead">
+            Cada tarjeta es un endpoint real. Pulsa <b>Enviar</b> y mira cómo
+            viaja el dato: tu navegador → proxy → api.pey.mx → banco/CoDi →
+            webhook firmado → tu app.
+          </p>
+        </div>
+        <div class="mode" id="mode" role="group" aria-label="Entorno"></div>
+      </div>
+      <div id="banner" class="banner" hidden></div>
+    </header>
+
+    <main>
+      <section class="flow" aria-label="Cómo se mueve el dato">
+        <div class="flow-track" id="flow"></div>
+        <p class="flow-caption" id="flow-caption">
+          Elige una tarjeta y pulsa Enviar: el recorrido se ilumina aquí.
+        </p>
+      </section>
+
+      <nav class="filters" id="filters" aria-label="Filtrar por grupo"></nav>
+
+      <h2 class="section">Endpoints <small>(11)</small></h2>
+      <section class="grid" id="endpoints"></section>
+
+      <h2 class="section">
+        Webhooks <small>(4 eventos que pey envía a tu servidor)</small>
+      </h2>
+      <p class="muted">
+        pey firma cada evento con Standard Webhooks. «Simular» firma un ejemplo
+        aquí mismo con tu secreto y lo envía a <code>/webhooks/pey</code> de
+        este servidor: verás la verificación y la idempotencia sin mover dinero.
+      </p>
+      <section class="grid" id="webhooks"></section>
+
+      <h2 class="section">
+        Webhooks recibidos en vivo <small id="feed-state">conectando…</small>
+      </h2>
+      <section class="feed" id="feed">
+        <p class="muted" id="feed-empty">
+          Aún no ha llegado ninguno. Simula uno arriba o, en sandbox, pulsa
+          «Simular…» tras crear un cobro.
+        </p>
+      </section>
+    </main>
+    <script src="/app.js" defer></script>
+  </body>
+</html>
